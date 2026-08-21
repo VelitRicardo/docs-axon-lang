@@ -1,12 +1,20 @@
 /**
  * Entry único de estilos (plan §6.1).
  *
- * F1 deja el archivo deliberadamente vacío de decisiones: el sistema de tokens
- * entra en F2 como `tokens.css`, `base.css` y `docusaurus.css`, y este archivo
- * pasa a ser solo la cadena de @import.
+ * Este archivo NO contiene decisiones: solo la cadena de imports y el orden de
+ * las capas. Cualquier declaración que aparezca aquí está en el sitio
+ * equivocado.
  *
- * Regla que empieza a regir desde ya: ningún literal de color, sombra, radio ni
- * duración fuera de `tokens.css`. Lo que se cuele aquí, lo caza el lint de F6.
+ * Orden de capas — el que gana está más a la derecha:
+ *   tokens  → las variables
+ *   base    → tipografía y ritmo
+ *   ifm     → puente hacia Infima
+ *   components / utilities → F3
  */
 
 @layer tokens, base, ifm, components, utilities;
+
+@import './fonts.css';
+@import './tokens.css';
+@import './base.css';
+@import './docusaurus.css';

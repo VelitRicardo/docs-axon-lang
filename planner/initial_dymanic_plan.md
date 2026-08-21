@@ -1,6 +1,6 @@
-# AXON Docs — Plan Vivo (v0.8)
+# AXON Docs — Plan Vivo (v0.9)
 
-> **Estado:** F1 EJECUTADA · en F2 · iterable · 14 de 16 cerradas — solo quedan D4 y D6,
+> **Estado:** F2 EJECUTADA · en F3 · iterable · 14 de 16 cerradas — solo quedan D4 y D6,
 > que son recomendaciones aplicadas salvo objeción y no bloquean nada
 > **Última revisión:** 2026-08-21
 > **Regla del documento:** este archivo es la única fuente de verdad del proyecto
@@ -303,12 +303,13 @@ autoridad que hace que la venta no tenga que empujar.
   --ax-navy-500:  #2C3E9E;
   --ax-navy-200:  #A9B4E8;  /* enlaces en modo oscuro          */
 
-  --ax-neon-500:  #00F26D;  /* la regla verde — acento único   */
-  --ax-neon-600:  #00C458;  /* variante accesible sobre papel  */
+  --ax-neon-500:  #00F26D;  /* la regla verde — solo trazo     */
+  --ax-neon-600:  #00C458;  /* mid: bullets, iconos, subrayado */
+  --ax-neon-800:  #007A37;  /* el ÚNICO verde legible: 4.76:1  */
 
   --ax-ink-900:   #14161A;  /* texto principal                 */
-  --ax-ink-600:   #4A4F57;  /* texto secundario                */
-  --ax-slate-600: #6E6E6E;  /* cajas grises tipo cintillo      */
+  --ax-ink-700:   #4A4F57;  /* texto secundario                */
+  --ax-ink-500:   #63676E;  /* texto tenue — 4.95:1            */
 
   --ax-night-900: #0B0D12;  /* fondo modo oscuro               */
   --ax-night-800: #12151C;
@@ -327,9 +328,13 @@ Semánticos (extracto; la lista completa se cierra en F2): `--surface-page`,
 el navy deja de ser tinta y se convierte en acento secundario (`--ax-navy-200`);
 el neón se mantiene idéntico — es el hilo de marca entre ambos modos.
 
-**Riesgo de contraste conocido:** `--ax-neon-500` sobre papel da ≈1.6:1. El neón
-**nunca** lleva texto encima en modo claro: solo reglas, subrayados, viñetas y
-bordes. Para texto de acento se usa `--ax-neon-600` o navy.
+**Contraste — medido, no estimado (F2).** `--ax-neon-500` sobre papel da
+**1.31:1**, y `--ax-neon-600` da **2.02:1**: ninguno de los dos sirve como
+texto, corrigiendo lo que decía la v0.1 de este plan. El neón **nunca** lleva
+texto encima en modo claro — solo reglas, subrayados, viñetas y bordes, que la
+norma exime por decorativos. Para texto de acento existe `--ax-neon-800`
+(#007A37, **4.76:1**), el verde más claro de la familia que pasa AA sobre papel.
+`scripts/check-contrast.py` verifica los 36 pares en cada build.
 
 ### 6.3 Tipografía (CERRADO — §14-D2 ✔)
 
@@ -580,7 +585,7 @@ Tres detalles que, si se pasan por alto, cuestan un día de depuración:
 |---|---|---|
 | **F0** Plan | este documento cerrado | §14 resuelto o diferido |
 | **F1** ✔ Andamiaje | `npm init docusaurus@latest . classic --typescript`, borrado del contenido demo, **`blog: false`**, `url`/`baseUrl` definitivos, i18n `en`+`es`, favicon e identidad, metadata §15 | `npm run build` verde y sitio vacío pero nuestro |
-| **F2** Tokens | `tokens.css` completo + mapeo `--ifm-*` + modo oscuro + tipografía self-hosted | cambiar 3 variables cambia todo el sitio; contraste AA verificado |
+| **F2** ✔ Tokens | `tokens.css` completo + mapeo `--ifm-*` + modo oscuro + tipografía self-hosted | cambiar 3 variables cambia todo el sitio; contraste AA verificado |
 | **F3** Theme | swizzles (Navbar, Footer, DocItem, CodeBlock, TOC) + componentes §7 + landing | landing publicable, cero hex fuera de tokens |
 | **F4** Sintaxis | gramática Prism `axon` + tema de código | los dos fixtures se ven correctos |
 | **F5** Contenido | bloques 1 y 2 del §5 (Empezar + Lenguaje) escritos | alguien ajeno escribe y ejecuta su primer agente solo con la doc |
@@ -736,6 +741,16 @@ Keywords de trabajo: `axon-lang`, `cognitive runtime`, `cognitive OS`,
 
 ## 16. Registro de iteraciones
 
+- **v0.9 · 2026-08-21** — **F2 ejecutada.** `tokens.css` (primitivas →
+  semánticos, claro y oscuro), `base.css`, `docusaurus.css` mapeando las
+  `--ifm-*`, y `custom.css` reducido a la cadena de imports. Tres familias
+  self-hosted vía `scripts/sync-fonts.py`: se detectó que Google sirve fuentes
+  variables y que pedir pesos sueltos descargaba **cuatro copias idénticas** —
+  con rangos de peso, 423 KB en 12 archivos en lugar de 766 KB en 20.
+  `scripts/check-contrast.py` verifica **36 pares AA** resolviendo las cadenas
+  de `var()`; todos pasan. **Corregido el §6.2:** `#00C458` no era accesible
+  (2.02:1), el verde legible sobre papel es `#007A37`; y `#6E6E6E` se quedaba
+  en 4.44:1, sustituido por `#63676E`.
 - **v0.8 · 2026-08-21** — **Marca vectorizada.** El SVG entregado no era vectorial:
   un PNG de 113 KB envuelto en SVG con máscara de luminancia, imposible de
   recolorear. Trazado a cuatro polígonos reales (IoU 0.987 contra el original,

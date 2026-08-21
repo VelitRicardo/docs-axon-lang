@@ -1,0 +1,198 @@
+/**
+ * ★ CENTRO DE CONTROL — plan §6.
+ *
+ * Este es el ÚNICO archivo del repositorio autorizado a contener un literal de
+ * color, sombra, radio, duración o familia tipográfica. Todo lo demás consume
+ * variables. El lint de F6 lo verifica.
+ *
+ * Dos capas, y la dirección importa:
+ *   primitivas (--ax-*)  →  semánticos (--surface-*, --text-*, …)
+ * Los componentes consumen SOLO semánticos. Nadie fuera de aquí toca --ax-*.
+ *
+ * CONTRASTE — todos los pares de texto están medidos, no estimados
+ * (script de verificación en scripts/check-contrast.py). Ningún par de texto
+ * baja de 4.5:1.
+ */
+
+@layer tokens {
+  :root {
+    /* ─────────────────────────────────────────────────────────────────
+       PRIMITIVAS · papel e imprenta
+       ───────────────────────────────────────────────────────────────── */
+    --ax-paper-50: #fbf9f5;
+    --ax-paper-100: #f2efe8;
+    --ax-paper-200: #e7e2d8;
+    --ax-paper-300: #d8d2c4;
+
+    --ax-navy-900: #0e1740;
+    --ax-navy-700: #17246b;
+    --ax-navy-500: #2c3e9e;
+    --ax-navy-200: #a9b4e8;
+    --ax-navy-100: #c3ccff;
+
+    /* El neón es forma, no texto. Ver la regla dura más abajo. */
+    --ax-neon-500: #00f26d; /* la regla verde. Solo trazo, nunca texto claro */
+    --ax-neon-600: #00c458; /* mid: bullets, subrayados, iconos              */
+    --ax-neon-800: #007a37; /* el único verde legible sobre papel — 4.76:1   */
+
+    --ax-ink-900: #14161a;
+    --ax-ink-700: #4a4f57;
+    --ax-ink-500: #63676e;
+    --ax-ink-400: #8f887b;
+
+    --ax-night-900: #0b0d12;
+    --ax-night-800: #12151c;
+    --ax-night-700: #1b202a;
+    --ax-night-600: #262c38;
+    --ax-night-500: #606978;
+
+    --ax-fog-200: #b9bcc4;
+    --ax-fog-400: #8a8f99;
+    --ax-fog-500: #7e8590;
+
+    /* Sintaxis — familia propia, medida sobre el fondo de código */
+    --ax-syn-plum: #6b3fa0;
+    --ax-syn-teal: #0f6e5c;
+    --ax-syn-amber: #8a4b10;
+    --ax-syn-plum-lit: #c9a2f5;
+    --ax-syn-teal-lit: #5fd3b0;
+    --ax-syn-amber-lit: #e0a76b;
+
+    /* ─────────────────────────────────────────────────────────────────
+       PRIMITIVAS · tipografía, espacio, forma, tiempo
+       ───────────────────────────────────────────────────────────────── */
+    --font-display: 'Instrument Serif', 'Iowan Old Style', Georgia, serif;
+    --font-text: 'Inter Tight', 'Inter', system-ui, -apple-system, sans-serif;
+    --font-mono: 'JetBrains Mono', ui-monospace, 'SF Mono', Menlo, monospace;
+
+    /* Escala modular 1.25, fluida donde importa */
+    --size-2xs: 0.694rem;
+    --size-xs: 0.8rem;
+    --size-sm: 0.875rem;
+    --size-base: 1rem;
+    --size-md: 1.125rem;
+    --size-lg: clamp(1.25rem, 1.1rem + 0.6vw, 1.5rem);
+    --size-xl: clamp(1.6rem, 1.35rem + 1.1vw, 2.05rem);
+    --size-2xl: clamp(2rem, 1.55rem + 2.1vw, 3.05rem);
+    --size-3xl: clamp(2.5rem, 1.7rem + 3.6vw, 4.4rem);
+
+    --leading-tight: 1.1;
+    --leading-snug: 1.3;
+    --leading-normal: 1.65;
+    --tracking-tight: -0.015em;
+    --tracking-wide: 0.06em;
+
+    /* Medida de lectura (plan §6.3) */
+    --measure: 68ch;
+
+    --space-1: 0.25rem;
+    --space-2: 0.5rem;
+    --space-3: 0.75rem;
+    --space-4: 1rem;
+    --space-6: 1.5rem;
+    --space-8: 2rem;
+    --space-12: 3rem;
+    --space-16: 4rem;
+
+    --radius-sm: 2px;
+    --radius: 4px; /* nada de esquinas blandas: esto es imprenta */
+    --radius-lg: 6px;
+
+    --hairline: 1px;
+    --rule: 3px; /* el grosor de la regla neón bajo los titulares */
+
+    --duration-fast: 90ms;
+    --duration: 160ms;
+    --ease: cubic-bezier(0.2, 0, 0.13, 1);
+
+    /* ─────────────────────────────────────────────────────────────────
+       SEMÁNTICOS · modo claro (por defecto)
+       ───────────────────────────────────────────────────────────────── */
+    --surface-page: var(--ax-paper-100);
+    --surface-raised: var(--ax-paper-50);
+    --surface-sunken: var(--ax-paper-200);
+    --surface-inverse: var(--ax-night-900);
+
+    --text-primary: var(--ax-ink-900); /* 15.77:1 */
+    --text-secondary: var(--ax-ink-700); /*  7.18:1 */
+    --text-muted: var(--ax-ink-500); /*  4.95:1 */
+    --text-inverse: var(--ax-paper-100);
+    --text-link: var(--ax-navy-700); /* 12.18:1 */
+    --text-link-hover: var(--ax-navy-500);
+
+    --border-hairline: var(--ax-paper-300); /* decorativo: divisores      */
+    --border-default: var(--ax-paper-300);
+    --border-control: var(--ax-ink-400); /* 3.06:1 — controles (1.4.11) */
+    --border-strong: var(--ax-ink-700);
+
+    --color-accent: var(--ax-neon-500); /* trazo, nunca texto          */
+    --color-accent-mid: var(--ax-neon-600); /* iconos, bullets, subrayado  */
+    --color-accent-text: var(--ax-neon-800); /* el verde legible — 4.76:1   */
+    --color-accent-contrast: var(--ax-ink-900);
+
+    --focus-ring: var(--ax-navy-700);
+    --focus-width: 2px;
+    --focus-offset: 2px;
+
+    --code-bg: var(--ax-paper-50);
+    --code-border: var(--ax-paper-300);
+    --code-text: var(--ax-ink-900);
+    --code-inline-bg: var(--ax-paper-200);
+
+    --syntax-decl: var(--ax-navy-900); /* 16.43:1 — persona, flow, agent… */
+    --syntax-keyword: var(--ax-navy-700); /* 13.30:1 */
+    --syntax-type: var(--ax-syn-plum); /*  7.02:1 */
+    --syntax-string: var(--ax-syn-teal); /*  5.86:1 */
+    --syntax-number: var(--ax-syn-amber); /*  6.45:1 */
+    --syntax-comment: var(--ax-ink-500); /*  5.40:1 */
+    --syntax-attr: var(--ax-navy-500); /*  8.72:1 */
+    --syntax-punct: var(--ax-ink-700); /*  7.84:1 */
+  }
+
+  /* ───────────────────────────────────────────────────────────────────
+     SEMÁNTICOS · modo oscuro
+     No es una inversión mecánica (plan §6.2): el navy deja de ser tinta y
+     pasa a ser acento secundario; el neón se mantiene idéntico, porque es el
+     hilo de marca entre los dos modos.
+     ─────────────────────────────────────────────────────────────────── */
+  [data-theme='dark'] {
+    --surface-page: var(--ax-night-900);
+    --surface-raised: var(--ax-night-800);
+    --surface-sunken: var(--ax-night-700);
+    --surface-inverse: var(--ax-paper-100);
+
+    --text-primary: var(--ax-paper-100); /* 16.92:1 */
+    --text-secondary: var(--ax-fog-200); /* 10.23:1 */
+    --text-muted: var(--ax-fog-400); /*  5.99:1 */
+    --text-inverse: var(--ax-ink-900);
+    --text-link: var(--ax-navy-200); /*  9.61:1 */
+    --text-link-hover: var(--ax-navy-100);
+
+    --border-hairline: var(--ax-night-600);
+    --border-default: var(--ax-night-600);
+    --border-control: var(--ax-night-500); /* 3.51:1 */
+    --border-strong: var(--ax-fog-400);
+
+    /* Sobre noche el neón sí es legible: 12.88:1 */
+    --color-accent: var(--ax-neon-500);
+    --color-accent-mid: var(--ax-neon-500);
+    --color-accent-text: var(--ax-neon-500);
+    --color-accent-contrast: var(--ax-night-900);
+
+    --focus-ring: var(--ax-neon-500);
+
+    --code-bg: var(--ax-night-800);
+    --code-border: var(--ax-night-600);
+    --code-text: var(--ax-paper-100);
+    --code-inline-bg: var(--ax-night-700);
+
+    --syntax-decl: var(--ax-navy-100); /* 11.66:1 */
+    --syntax-keyword: #9fb0ff; /*  8.81:1 */
+    --syntax-type: var(--ax-syn-plum-lit); /*  8.67:1 */
+    --syntax-string: var(--ax-syn-teal-lit); /*  9.94:1 */
+    --syntax-number: var(--ax-syn-amber-lit); /*  8.62:1 */
+    --syntax-comment: var(--ax-fog-500); /*  4.91:1 */
+    --syntax-attr: var(--ax-navy-200); /*  9.03:1 */
+    --syntax-punct: var(--ax-fog-200); /*  9.61:1 */
+  }
+}

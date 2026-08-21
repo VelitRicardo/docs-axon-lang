@@ -1,0 +1,139 @@
+/**
+ * Base tipográfica y ritmo vertical.
+ *
+ * Solo semánticos: si aquí aparece un literal de color, es un bug.
+ */
+
+@layer base {
+  html {
+    -webkit-text-size-adjust: 100%;
+    text-size-adjust: 100%;
+  }
+
+  body {
+    font-family: var(--font-text);
+    font-size: var(--size-md);
+    line-height: var(--leading-normal);
+    color: var(--text-primary);
+    background-color: var(--surface-page);
+    font-synthesis-weight: none;
+    text-rendering: optimizeLegibility;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  /* Los titulares son la voz editorial del sitio. */
+  h1,
+  h2,
+  h3 {
+    font-family: var(--font-display);
+    font-weight: 400;
+    letter-spacing: var(--tracking-tight);
+    line-height: var(--leading-tight);
+    color: var(--text-primary);
+  }
+
+  h4,
+  h5,
+  h6 {
+    font-family: var(--font-text);
+    font-weight: 600;
+    line-height: var(--leading-snug);
+  }
+
+  h1 {
+    font-size: var(--size-2xl);
+  }
+  h2 {
+    font-size: var(--size-xl);
+  }
+  h3 {
+    font-size: var(--size-lg);
+  }
+
+  /**
+   * La firma visual (plan §6.4): una regla neón bajo el titular de cada
+   * página. Cita directa de la referencia impresa, y el único sitio donde el
+   * acento aparece a tamaño grande.
+   */
+  .markdown > header > h1::after,
+  article > header > h1::after {
+    content: '';
+    display: block;
+    width: 4.5rem;
+    height: var(--rule);
+    margin-top: var(--space-4);
+    background-color: var(--color-accent);
+  }
+
+  p,
+  li {
+    max-width: var(--measure);
+  }
+
+  a {
+    color: var(--text-link);
+    text-decoration-thickness: 1px;
+    text-underline-offset: 0.18em;
+  }
+
+  a:hover {
+    color: var(--text-link-hover);
+  }
+
+  /* Foco visible y consistente en todo el sitio, sin excepciones. */
+  :focus-visible {
+    outline: var(--focus-width) solid var(--focus-ring);
+    outline-offset: var(--focus-offset);
+    border-radius: var(--radius-sm);
+  }
+
+  code,
+  kbd,
+  pre,
+  samp {
+    font-family: var(--font-mono);
+    font-feature-settings: 'liga' 0;
+  }
+
+  hr {
+    border: 0;
+    border-top: var(--hairline) solid var(--border-hairline);
+  }
+
+  /* Cajas con borde fino, nunca sombras difusas (plan §6.4). */
+  table {
+    border-collapse: collapse;
+  }
+
+  th,
+  td {
+    border: var(--hairline) solid var(--border-hairline);
+  }
+
+  th {
+    font-family: var(--font-text);
+    font-weight: 600;
+    font-size: var(--size-sm);
+    letter-spacing: var(--tracking-wide);
+    text-transform: uppercase;
+    color: var(--text-secondary);
+    background-color: var(--surface-sunken);
+  }
+
+  blockquote {
+    border-left: var(--rule) solid var(--color-accent-mid);
+    background: none;
+    color: var(--text-secondary);
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+      animation-duration: 0.01ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.01ms !important;
+      scroll-behavior: auto !important;
+    }
+  }
+}

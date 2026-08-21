@@ -1,0 +1,142 @@
+/**
+ * Puente hacia Infima, el sistema de estilos que trae Docusaurus.
+ *
+ * Dirección obligatoria (plan §6.1): las `--ifm-*` se redefinen EN TÉRMINOS de
+ * nuestros semánticos. Nunca al revés, y nunca con un literal. Así el theme
+ * entero obedece al centro de control sin tener que reescribirlo.
+ */
+
+@layer ifm {
+  :root,
+  [data-theme='dark'] {
+    /* Tipografía */
+    --ifm-font-family-base: var(--font-text);
+    --ifm-font-family-monospace: var(--font-mono);
+    --ifm-heading-font-family: var(--font-display);
+    --ifm-heading-font-weight: 400;
+    --ifm-font-size-base: var(--size-md);
+    --ifm-line-height-base: var(--leading-normal);
+    --ifm-h1-font-size: var(--size-2xl);
+    --ifm-h2-font-size: var(--size-xl);
+    --ifm-h3-font-size: var(--size-lg);
+
+    /* Color */
+    --ifm-background-color: var(--surface-page);
+    --ifm-background-surface-color: var(--surface-raised);
+    --ifm-font-color-base: var(--text-primary);
+    --ifm-heading-color: var(--text-primary);
+    --ifm-secondary-color: var(--text-secondary);
+    --ifm-link-color: var(--text-link);
+    --ifm-link-hover-color: var(--text-link-hover);
+    --ifm-color-content-secondary: var(--text-muted);
+
+    /**
+     * El primario de Infima gobierna enlaces, estados activos del sidebar y
+     * botones. Va a navy, no al neón: el neón no tiene contraste para texto
+     * sobre papel (1.31:1) y aquí se usaría como color de texto.
+     */
+    --ifm-color-primary: var(--text-link);
+    --ifm-color-primary-dark: var(--ax-navy-900);
+    --ifm-color-primary-darker: var(--ax-navy-900);
+    --ifm-color-primary-darkest: var(--ax-navy-900);
+    --ifm-color-primary-light: var(--ax-navy-500);
+    --ifm-color-primary-lighter: var(--ax-navy-500);
+    --ifm-color-primary-lightest: var(--ax-navy-200);
+
+    /* Forma */
+    --ifm-global-radius: var(--radius);
+    --ifm-button-border-radius: var(--radius);
+    --ifm-hr-border-color: var(--border-hairline);
+    --ifm-toc-border-color: var(--border-hairline);
+    --ifm-table-border-color: var(--border-hairline);
+    --ifm-table-stripe-background: var(--surface-raised);
+    --ifm-table-head-background: var(--surface-sunken);
+    --ifm-blockquote-color: var(--text-secondary);
+    --ifm-blockquote-border-color: var(--color-accent-mid);
+
+    /* Sombras: no las usamos. Esto es imprenta, no material design. */
+    --ifm-global-shadow-lw: none;
+    --ifm-global-shadow-md: none;
+    --ifm-global-shadow-tl: none;
+
+    /* Código */
+    --ifm-code-font-size: 0.875em;
+    --ifm-code-background: var(--code-inline-bg);
+    --ifm-code-border-radius: var(--radius-sm);
+    --ifm-pre-background: var(--code-bg);
+    --ifm-pre-color: var(--code-text);
+
+    /* Navbar y footer, con regla fina en lugar de sombra */
+    --ifm-navbar-background-color: var(--surface-page);
+    --ifm-navbar-shadow: none;
+    --ifm-navbar-link-color: var(--text-secondary);
+    --ifm-navbar-link-hover-color: var(--text-primary);
+    --ifm-footer-background-color: var(--surface-page);
+    --ifm-footer-color: var(--text-secondary);
+    --ifm-footer-link-color: var(--text-secondary);
+    --ifm-footer-link-hover-color: var(--text-primary);
+    --ifm-footer-title-color: var(--text-primary);
+
+    /* Sidebar y menú */
+    --ifm-menu-color: var(--text-secondary);
+    --ifm-menu-color-active: var(--text-link);
+    --ifm-menu-color-background-active: var(--surface-sunken);
+    --ifm-menu-color-background-hover: var(--surface-sunken);
+
+    /* Transiciones */
+    --ifm-transition-fast: var(--duration-fast);
+    --ifm-transition-slow: var(--duration);
+    --ifm-transition-timing-default: var(--ease);
+  }
+
+  /* La marca hereda el color del texto: navy sobre papel, papel sobre noche. */
+  .navbar__logo img,
+  .navbar__logo svg {
+    color: var(--text-primary);
+    height: 1.5rem;
+    width: auto;
+  }
+
+  .navbar__title {
+    font-family: var(--font-display);
+    font-size: var(--size-lg);
+    letter-spacing: var(--tracking-tight);
+  }
+
+  /* Regla fina bajo la navbar y sobre el footer, en vez de sombra. */
+  .navbar {
+    border-bottom: var(--hairline) solid var(--border-hairline);
+  }
+
+  .footer {
+    border-top: var(--hairline) solid var(--border-hairline);
+    font-size: var(--size-sm);
+  }
+
+  /* Bloques de código: caja con borde, sin sombra. */
+  div[class^='codeBlockContainer'] {
+    border: var(--hairline) solid var(--code-border);
+    border-radius: var(--radius);
+    box-shadow: none;
+  }
+
+  /* Admoniciones en clave editorial: barra lateral, sin relleno de color. */
+  .theme-admonition {
+    border: var(--hairline) solid var(--border-hairline);
+    border-left-width: var(--rule);
+    border-radius: var(--radius);
+    background-color: var(--surface-raised);
+    box-shadow: none;
+  }
+
+  /* La TOC de la derecha es aparato, no contenido: baja de peso. */
+  .table-of-contents {
+    font-size: var(--size-sm);
+    border-left: var(--hairline) solid var(--border-hairline);
+  }
+
+  .table-of-contents__link--active {
+    color: var(--text-link);
+    font-weight: 500;
+  }
+}
