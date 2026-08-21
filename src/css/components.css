@@ -1,0 +1,267 @@
+/**
+ * Componentes editoriales (plan §7).
+ *
+ * Solo semánticos. Si aquí aparece un literal de color, sombra o radio, es un
+ * bug y lo caza el lint de F6.
+ *
+ * Vocabulario visual, constante en todo el archivo:
+ *   · filete de 1px en lugar de sombra
+ *   · radio de 4px, nunca más
+ *   · el acento aparece como TRAZO, jamás como fondo de texto en modo claro
+ */
+
+@layer components {
+  /* ─── Masthead ──────────────────────────────────────────────────── */
+
+  .ax-masthead {
+    margin-bottom: var(--space-12);
+    padding-bottom: var(--space-6);
+    border-bottom: var(--hairline) solid var(--border-hairline);
+  }
+
+  .ax-masthead__kicker {
+    margin: 0 0 var(--space-4);
+    padding-bottom: var(--space-2);
+    border-bottom: var(--hairline) solid var(--border-hairline);
+    font-family: var(--font-text);
+    font-size: var(--size-xs);
+    font-weight: 600;
+    letter-spacing: var(--tracking-wide);
+    text-transform: uppercase;
+    color: var(--text-muted);
+    max-width: none;
+  }
+
+  .ax-masthead__title {
+    margin: 0;
+    font-family: var(--font-display);
+    font-size: var(--size-3xl);
+    font-weight: 400;
+    line-height: var(--leading-tight);
+    letter-spacing: var(--tracking-tight);
+    color: var(--text-primary);
+  }
+
+  /* La regla de acento: la firma de la casa. */
+  .ax-masthead__title::after {
+    content: '';
+    display: block;
+    width: 6rem;
+    height: var(--rule);
+    margin-top: var(--space-4);
+    background-color: var(--color-accent);
+  }
+
+  .ax-masthead__standfirst {
+    margin: var(--space-6) 0 0;
+    max-width: var(--measure);
+    font-family: var(--font-display);
+    font-style: italic;
+    font-size: var(--size-lg);
+    line-height: var(--leading-snug);
+    color: var(--text-secondary);
+  }
+
+  .ax-masthead__meta {
+    margin: var(--space-4) 0 0;
+    font-size: var(--size-sm);
+    color: var(--text-muted);
+    max-width: none;
+  }
+
+  /* ─── Ledger ────────────────────────────────────────────────────── */
+
+  .ax-ledger {
+    display: grid;
+    gap: var(--space-6);
+    margin: var(--space-8) 0;
+  }
+
+  @media (min-width: 720px) {
+    .ax-ledger[data-columns='2'] {
+      grid-template-columns: repeat(2, 1fr);
+    }
+    .ax-ledger[data-columns='3'] {
+      grid-template-columns: repeat(3, 1fr);
+    }
+  }
+
+  .ax-ledger__item {
+    padding: var(--space-6);
+    border: var(--hairline) solid var(--border-hairline);
+    border-radius: var(--radius);
+    background-color: var(--surface-raised);
+  }
+
+  .ax-ledger__index {
+    margin: 0 0 var(--space-3);
+    font-family: var(--font-mono);
+    font-size: var(--size-xs);
+    letter-spacing: var(--tracking-wide);
+    text-transform: uppercase;
+    color: var(--color-accent-text);
+    max-width: none;
+  }
+
+  .ax-ledger__title {
+    margin: 0 0 var(--space-3);
+    font-family: var(--font-text);
+    font-size: var(--size-base);
+    font-weight: 600;
+    letter-spacing: normal;
+    line-height: var(--leading-snug);
+  }
+
+  .ax-ledger__body {
+    font-size: var(--size-sm);
+    color: var(--text-secondary);
+  }
+
+  .ax-ledger__body > :last-child {
+    margin-bottom: 0;
+  }
+
+  .ax-ledger__body p {
+    max-width: none;
+  }
+
+  /* ─── DeclCard ──────────────────────────────────────────────────── */
+
+  .ax-decl {
+    margin: var(--space-8) 0;
+    border: var(--hairline) solid var(--border-hairline);
+    border-left: var(--rule) solid var(--color-accent-mid);
+    border-radius: var(--radius);
+    background-color: var(--surface-raised);
+    overflow: hidden;
+  }
+
+  .ax-decl__head {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: var(--space-4);
+    padding: var(--space-3) var(--space-6);
+    border-bottom: var(--hairline) solid var(--border-hairline);
+    background-color: var(--surface-sunken);
+  }
+
+  .ax-decl__keyword {
+    font-family: var(--font-mono);
+    font-size: var(--size-base);
+    font-weight: 700;
+    color: var(--syntax-decl);
+    background: none;
+    border: 0;
+    padding: 0;
+  }
+
+  .ax-decl__since {
+    font-size: var(--size-xs);
+    letter-spacing: var(--tracking-wide);
+    text-transform: uppercase;
+    color: var(--text-muted);
+  }
+
+  .ax-decl__signature {
+    margin: var(--space-4) var(--space-6) 0;
+    font-family: var(--font-mono);
+    font-size: var(--size-sm);
+    color: var(--text-secondary);
+    max-width: none;
+  }
+
+  .ax-decl__summary {
+    margin: var(--space-3) var(--space-6);
+    max-width: var(--measure);
+  }
+
+  .ax-decl__body {
+    margin: 0 var(--space-6) var(--space-6);
+  }
+
+  /* ─── CliBlock ──────────────────────────────────────────────────── */
+
+  .ax-cli {
+    margin: var(--space-6) 0;
+    border: var(--hairline) solid var(--code-border);
+    border-radius: var(--radius);
+    overflow: hidden;
+  }
+
+  /* Cintillo de cabecera, como la etiqueta de archivo de un bloque de código. */
+  .ax-cli__label {
+    margin: 0;
+    padding: var(--space-2) var(--space-4);
+    border-bottom: var(--hairline) solid var(--code-border);
+    background-color: var(--surface-sunken);
+    font-family: var(--font-mono);
+    font-size: var(--size-2xs);
+    letter-spacing: var(--tracking-wide);
+    text-transform: uppercase;
+    color: var(--text-muted);
+    max-width: none;
+  }
+
+  .ax-cli__body {
+    margin: 0;
+    padding: var(--space-4);
+    border-radius: 0;
+    background-color: var(--code-bg);
+    color: var(--code-text);
+    font-size: var(--size-sm);
+    line-height: var(--leading-snug);
+  }
+
+  /* Fuera del flujo seleccionable: copiar el comando no arrastra el `$`. */
+  .ax-cli__prompt {
+    color: var(--text-muted);
+    user-select: none;
+  }
+
+  .ax-cli__command {
+    color: var(--code-text);
+  }
+
+  .ax-cli__output {
+    color: var(--text-muted);
+  }
+
+  /* ─── VersionBadge ──────────────────────────────────────────────── */
+
+  .ax-version {
+    display: inline-block;
+    padding: 0 var(--space-2);
+    border: var(--hairline) solid var(--border-hairline);
+    border-radius: var(--radius-sm);
+    font-family: var(--font-mono);
+    font-size: var(--size-xs);
+    color: var(--text-secondary);
+    white-space: nowrap;
+  }
+
+  .ax-version strong {
+    color: var(--text-primary);
+    font-weight: 700;
+  }
+
+  /* ─── Capitular ─────────────────────────────────────────────────── */
+
+  /**
+   * Drop cap opcional para la entrada de páginas conceptuales (plan §6.4).
+   * Se pide con la clase, no se aplica sola: una capitular en cada página
+   * dejaría de ser un gesto.
+   *
+   * Va sobre un <div>, no sobre un <p>: en MDX el texto interior genera su
+   * propio párrafo, y anidar <p> dentro de <p> produce HTML inválido — el
+   * parser cierra el primero y la capitular no llega a aplicarse.
+   */
+  .ax-dropcap > p:first-of-type::first-letter {
+    float: left;
+    margin: 0.08em var(--space-3) 0 0;
+    font-family: var(--font-display);
+    font-size: 3.4em;
+    line-height: 0.82;
+    color: var(--text-primary);
+  }
+}

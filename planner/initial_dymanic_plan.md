@@ -1,6 +1,6 @@
-# AXON Docs — Plan Vivo (v0.9)
+# AXON Docs — Plan Vivo (v0.10)
 
-> **Estado:** F2 EJECUTADA · en F3 · iterable · 14 de 16 cerradas — solo quedan D4 y D6,
+> **Estado:** F3 EJECUTADA · en F4 · iterable · 14 de 16 cerradas — solo quedan D4 y D6,
 > que son recomendaciones aplicadas salvo objeción y no bloquean nada
 > **Última revisión:** 2026-08-21
 > **Regla del documento:** este archivo es la única fuente de verdad del proyecto
@@ -537,12 +537,20 @@ propio y previews por PR; el sitio del autor solo reenvía.
 {
   "rewrites": [
     { "source": "/axon-docs",
-      "destination": "https://axon-docs.vercel.app/axon-docs" },
+      "destination": "https://axon-docs.vercel.app" },
     { "source": "/axon-docs/:path*",
-      "destination": "https://axon-docs.vercel.app/axon-docs/:path*" }
+      "destination": "https://axon-docs.vercel.app/:path*" }
   ]
 }
 ```
+
+> **El destino NO lleva el prefijo — verificado sobre el build real (F3).**
+> `build/` no contiene ninguna carpeta `axon-docs/`: el deployment sirve el
+> sitio en su propia raíz, y es el `baseUrl` el que escribe `/axon-docs/`
+> delante de cada URL del HTML. El rewrite tiene que **quitar** ese prefijo al
+> reenviar. Con el destino prefijado, la home cargaría y **todos los assets
+> darían 404**, que es el fallo clásico de este montaje y el más difícil de
+> diagnosticar, porque el HTML llega bien.
 
 Tres detalles que, si se pasan por alto, cuestan un día de depuración:
 
@@ -586,7 +594,7 @@ Tres detalles que, si se pasan por alto, cuestan un día de depuración:
 | **F0** Plan | este documento cerrado | §14 resuelto o diferido |
 | **F1** ✔ Andamiaje | `npm init docusaurus@latest . classic --typescript`, borrado del contenido demo, **`blog: false`**, `url`/`baseUrl` definitivos, i18n `en`+`es`, favicon e identidad, metadata §15 | `npm run build` verde y sitio vacío pero nuestro |
 | **F2** ✔ Tokens | `tokens.css` completo + mapeo `--ifm-*` + modo oscuro + tipografía self-hosted | cambiar 3 variables cambia todo el sitio; contraste AA verificado |
-| **F3** Theme | swizzles (Navbar, Footer, DocItem, CodeBlock, TOC) + componentes §7 + landing | landing publicable, cero hex fuera de tokens |
+| **F3** ✔ Theme | swizzles (Navbar, Footer, DocItem, CodeBlock, TOC) + componentes §7 + landing | landing publicable, cero hex fuera de tokens |
 | **F4** Sintaxis | gramática Prism `axon` + tema de código | los dos fixtures se ven correctos |
 | **F5** Contenido | bloques 1 y 2 del §5 (Empezar + Lenguaje) escritos | alguien ajeno escribe y ejecuta su primer agente solo con la doc |
 | **F5b** Capacidades | plugin generador desde `capabilities.toml` + gate de CI (§5.6) | toda capacidad del catálogo tiene página; ninguna URL del compilador 404 |
@@ -741,6 +749,19 @@ Keywords de trabajo: `axon-lang`, `cognitive runtime`, `cognitive OS`,
 
 ## 16. Registro de iteraciones
 
+- **v0.10 · 2026-08-21** — **F3 ejecutada.** Capa `components.css` y cinco
+  componentes editoriales (`Masthead`, `Ledger`/`LedgerItem`, `DeclCard`,
+  `CliBlock`, `VersionBadge`), registrados globalmente en MDX vía envoltorio de
+  `MDXComponents` — envoltorio, no eject, para sobrevivir a las actualizaciones.
+  Landing reescrita con ellos. Cero hex fuera de `tokens.css`, 36/36 AA, `tsc`
+  limpio. Dos hallazgos: (1) MDX anidaba `<p>` dentro del `<p>` de la capitular
+  —HTML inválido que además anulaba el efecto—, resuelto pasando a `<div>` y
+  apuntando el selector al párrafo interior; (2) **corregido el §11.3**: el
+  destino del rewrite **no lleva el prefijo** `/axon-docs`, porque el build se
+  sirve en la raíz del deployment. Con el destino prefijado la home cargaría y
+  todos los assets darían 404.
+  Diferidos a F5, cuando haya contenido real que los justifique: `CodeShowcase`
+  (código con explicación sincronizada) y `Callout` con variantes de dominio.
 - **v0.9 · 2026-08-21** — **F2 ejecutada.** `tokens.css` (primitivas →
   semánticos, claro y oscuro), `base.css`, `docusaurus.css` mapeando las
   `--ifm-*`, y `custom.css` reducido a la cadena de imports. Tres familias

@@ -3,30 +3,61 @@ slug: /
 id: index
 title: AXON — the language that compiles to LLMs
 sidebar_label: AXON
-description: AXON is the language that compiles to LLMs — a cognitive runtime where the guarantees of an agent are checked at compile time, not hoped for at runtime.
+description: AXON is a cognitive runtime — a compiler and an epistemic type system for programs whose executor is a language model. The guarantees are checked while it compiles.
 keywords: [axon-lang, cognitive runtime, cognitive OS, LLM compiler, agent DSL]
 hide_title: true
 ---
 
-# AXON
+<Masthead
+  kicker="Documentation"
+  title="AXON"
+  standfirst="A compiler and an epistemic type system for programs whose executor is a language model."
+  meta={<><VersionBadge /> · Apache 2.0 · by Ricardo Velit</>}
+/>
 
-**The language that compiles to LLMs.**
+<div className="ax-dropcap">
+Most agent stacks postpone their hard questions to runtime. Which tools may this
+agent reach? How much may it spend before it stops? What must it refuse to
+assert when it cannot cite a source? AXON asks those questions at compile time,
+because a property that is checked before the program runs is a guarantee, and
+one that is checked while it runs is a hope.
+</div>
 
-AXON is a cognitive runtime: a compiler and a type system for programs whose
-executor is a language model. What most stacks postpone to runtime — which tools
-an agent may reach, how much it may spend, what it must refuse to assert — AXON
-checks while it compiles.
+The compiler, the type system and the runtime are open source. You can read
+them, run them, and use them to contradict us — which is the point: a project
+that sells guarantees cannot ask to be believed.
+
+<CliBlock command="cargo install axon-lang" />
+
+<Ledger columns={3}>
+  <LedgerItem index="01" title="Guarantees, not intentions">
+    Budgets, tool reach and epistemic obligations are declared in the source and
+    verified by the compiler. What the type checker accepts, the runtime honours.
+  </LedgerItem>
+  <LedgerItem index="02" title="One language, two editions">
+    The paid edition adds depth, never grammar. Any valid program parses and
+    type-checks with the open-source compiler; what it cannot do is mount a
+    capability it does not have — and it says so, by name, at compile time.
+  </LedgerItem>
+  <LedgerItem index="03" title="Rust and C, all the way down">
+    A single toolchain with no runtime surprises. The compiler is Apache 2.0 and
+    the runtime carries the LLVM exception, so your binaries owe nothing.
+  </LedgerItem>
+</Ledger>
+
+## Start here
+
+- **[What is AXON](/getting-started/what-is-axon)** — the idea, and why it is a
+  language and not a framework.
+- **[Install](/getting-started/install)** — one command, plus how to verify it.
+- **[Language](/language/overview)** — the declarations and the type system.
+- **[Editions & frontier](/editions/frontier)** — what is open, what is not, and
+  why the line falls where it does.
 
 :::note Work in progress
 
-This site is being built. The scaffolding is in place; the reference is being
-written against `axon-lang` v4.3.0. See the
-[plan](https://github.com/VelitRicardo/axon-lang) for what lands next.
+The scaffolding and the design system are in place; the reference is being
+written against <VersionBadge />. Pages marked *work in progress* are outlines,
+not content.
 
 :::
-
-## Where to start
-
-- **[What is AXON](/getting-started/what-is-axon)** — the idea, in a few minutes.
-- **[Install](/getting-started/install)** — one command.
-- **[Language](/language/overview)** — the declarations and the type system.

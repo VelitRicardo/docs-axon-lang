@@ -9,7 +9,8 @@
  *   tokens  → las variables
  *   base    → tipografía y ritmo
  *   ifm     → puente hacia Infima
- *   components / utilities → F3
+ *   components → los componentes editoriales
+ *   utilities → F6
  */
 
 @layer tokens, base, ifm, components, utilities;
@@ -18,3 +19,4 @@
 @import './tokens.css';
 @import './base.css';
 @import './docusaurus.css';
+@import './components.css';
