@@ -1,4 +1,4 @@
-# AXON Docs — Plan Vivo (v0.13)
+# AXON Docs — Plan Vivo (v0.14)
 
 > **Estado:** F5 EN CURSO — corpus migrado · iterable · 14 de 16 cerradas — solo quedan D4 y D6,
 > que son recomendaciones aplicadas salvo objeción y no bloquean nada
@@ -625,6 +625,30 @@ Tres detalles que, si se pasan por alto, cuestan un día de depuración:
 3. **Algolia rastrea el canónico**, nunca el `.vercel.app`, o el índice devolverá
    URLs que el usuario no debería ver.
 
+### 11.5 Cuándo se puede cancelar Mintlify
+
+**El contenido ya está a salvo:** el corpus vive en este repo y el original
+sigue en `axon-lang/docs/`. Cancelar no puede perder texto.
+
+Lo que sí se pierde al cancelar es **continuidad de URLs**. El orden seguro es:
+
+1. Desplegar este sitio en `ricardovelit.com/axon-docs/` (F7).
+2. Comprobar paridad: que las 203 páginas respondan y que la búsqueda indexe.
+3. Poner las redirecciones 301 de las URLs viejas a las nuevas — y esas
+   redirecciones se configuran **en el sitio que se va a apagar**, así que hay
+   que hacerlo antes de apagarlo.
+4. Dejar correr unas semanas para que el buscador siga los 301.
+5. Entonces cancelar.
+
+**Si el sitio Mintlify nunca llegó a publicarse** —sin dominio público, sin
+enlaces entrantes, sin tráfico— no hay nada que preservar y se puede cancelar
+hoy mismo. Es el propio autor quien sabe eso.
+
+Si la cuenta cuesta dinero y urge, **bajar de plan** conserva las URLs y corta
+el gasto; cancelar del todo es lo único irreversible.
+
+---
+
 ### 11.4 CI y build
 
 - Build reproducible: `npm ci && npm run build` + `npm run serve` de humo.
@@ -804,6 +828,14 @@ Keywords de trabajo: `axon-lang`, `cognitive runtime`, `cognitive OS`,
 
 ## 16. Registro de iteraciones
 
+- **v0.14 · 2026-08-21** — **Primer tramo de traducción: 5 páginas, 2.605
+  palabras** (Empezar + La idea) — el 11% del subconjunto de D17. Reglas
+  aplicadas: no se traduce ni una palabra clave del lenguaje (`shield`, `flow`,
+  `type`, `know`/`believe`/`speculate`/`doubt`), ni los códigos de diagnóstico
+  (`axon-T957`), ni el texto literal de los errores del compilador — traducir un
+  mensaje que el lector va a ver en inglés en su terminal lo dejaría sin poder
+  buscarlo. Sí se traducen `title`, `description` y las props `title` de los
+  componentes. **Mintlify: no se cancela todavía** — ver §11.5.
 - **v0.13 · 2026-08-21** — **Corpus migrado.** 203 páginas, 3 imágenes y
   sidebar de 22 grupos generado desde `docs.json`. `scripts/migrate-docs.py`
   copia **sin tocar el cuerpo**: los únicos cambios son `slug: /` en la portada

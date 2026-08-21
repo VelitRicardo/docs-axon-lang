@@ -1,0 +1,114 @@
+---
+title: "Cumplimiento en compilación"
+description: "La clase regulatoria es un tipo. La cobertura es una diferencia de conjuntos. El vocabulario es cerrado. Esto es exactamente lo que eso demuestra — y lo que no."
+---
+
+Casi todos los sistemas tratan el cumplimiento como un proceso: un documento de
+política, una revisión, una auditoría que ocurre después de que el código
+existe. AXON lo trata como una **propiedad del sistema de tipos**, comprobada
+antes de que nada se ejecute.
+
+## La clase es un tipo
+
+```axon
+type PatientRecord compliance [HIPAA, GDPR] { ssn: String }
+```
+
+`PatientRecord` no *tiene* simplemente un comentario que diga que es sensible.
+Sus clases regulatorias —escritas **κ**— viajan con él por todo el programa: por
+los parámetros de un `flow`, por el `body:` y el `output:` de un
+`axonendpoint`, por un manejador `Channel<PatientRecord>`, hasta un
+`axonstore`.
+
+Cuatro declaraciones pueden transportar una clase: `type`, `shield`,
+`axonendpoint` y `manifest`.
+
+## La cobertura es una diferencia de conjuntos
+
+La regla cabe en una frase:
+
+> Toda frontera que transporte una clase regulada debe declarar un shield cuya
+> lista `compliance:` cubra esa clase.
+
+"Cubrir" significa una diferencia de conjuntos real, no una comprobación de
+presencia. Un shield que cubre *algunas* de las clases falla, y el diagnóstico
+nombra exactamente las que le faltan:
+
+```
+axon-T957 axonendpoint 'Api' declares `shield: PartialShield`, but that shield
+does not cover kappa = {GDPR} carried across the boundary — the ESK coverage
+rule. Add [GDPR] to shield 'PartialShield's `compliance:` list, or name a shield
+that already covers them.
+```
+
+La regla guarda toda frontera portadora de κ:
+
+| dónde | código |
+| --- | --- |
+| endpoints HTTP | `axon-T957` |
+| canales tipados, en la declaración | `axon-T1215` |
+| `publish` del cálculo π, en ejecución, para IR que esquivó el verificador | falla cerrado |
+
+<Warning>
+  **La etiqueta no es el control.** Declarar `compliance: [HIPAA, GDPR]` en el
+  propio endpoint *no* satisface la regla. Esa lista dice qué transporta la
+  frontera; el shield es lo que actúa cuando se detecta una brecha. Un sistema
+  que aceptara la etiqueta como cobertura dejaría que un programa se certificara
+  a sí mismo.
+</Warning>
+
+## El vocabulario es cerrado
+
+```text
+type Record compliance [HIPPA] { ssn: String }   // mal escrito a propósito
+```
+
+```
+axon-T1214 type 'Record' declares `HIPPA`, which is not a regulatory class.
+Did you mean `HIPAA`?
+```
+
+El registro canónico tiene quince miembros, y la pertenencia distingue
+mayúsculas de minúsculas:
+
+`HIPAA` · `PCI_DSS` · `GDPR` · `SOX` · `FINRA` · `ISO27001` · `SOC2` ·
+`FISMA` · `GxP` · `CCPA` · `NIST_800_53` · `NOM151` · `LFPDPPP` · `LGPD` ·
+`LEY1581`
+
+El cierre no es pulcritud — es lo que hace *sólida* la regla de cobertura. Si el
+vocabulario fuera abierto, una errata simétrica en el tipo y en el shield
+satisfaría la diferencia de conjuntos sin proteger absolutamente nada. Ese es el
+fallo que el catálogo cerrado vuelve irrepresentable.
+
+## Verificado otra vez en el despliegue
+
+La comprobación en compilación responde a "¿pasó este código fuente?". Una
+compuerta de despliegue tiene una pregunta más difícil: "¿satisface este
+*artefacto* las obligaciones, lo haya construido quien lo haya construido?".
+
+`axon pcc prove` emite un objeto de prueba; `axon pcc verify` vuelve a derivar
+las obligaciones desde el artefacto, de forma independiente. Así, un programa
+cuya IR nunca pasó por el verificador tampoco puede extruir una carga regulada —
+el bus tipado deriva su predicado de la misma IR desde la que registra los
+canales, y falla cerrado.
+
+## Qué demuestra esto, con precisión
+
+Ser honesto sobre el límite forma parte del diseño, así que:
+
+**Lo que se comprueba automáticamente:** el cierre del vocabulario
+(`axon-T1214`) y la cobertura de shield en toda frontera portadora de κ
+(`axon-T957`, `axon-T1215`), reverificado en el despliegue y en el `publish`. El
+motor de auditoría puntúa que *la cobertura se sostiene*, nunca la presencia de
+una etiqueta.
+
+**Lo que no:** las obligaciones *semánticas* de cada norma. Lo que HIPAA exige
+en la práctica es cosa del diseño de tus shields y tus flows. AXON pone el
+mecanismo —NOM151 se corresponde con las cadenas de auditoría selladas de
+`axonstore`; LFPDPPP, LGPD y LEY1581 con la redacción de `shield` y la cobertura
+de κ— y tú pones la política. El motor de auditoría hace constar esa salvedad en
+la evidencia que emite.
+
+La postura frente a FIPS 140-3 es *conforme algorítmicamente, no validada
+formalmente*. CAVP y CMVP son procesos de laboratorio, y ningún compilador puede
+cerrarlos.

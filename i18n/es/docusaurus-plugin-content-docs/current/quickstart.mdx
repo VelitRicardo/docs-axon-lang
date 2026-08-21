@@ -1,0 +1,103 @@
+---
+title: "Inicio rápido"
+description: "Treinta segundos hasta un programa que el compilador rechaza — y el cambio de una línea que hace que lo rechace."
+---
+
+La forma más rápida de entender AXON es verlo decir que no.
+
+<Steps>
+  <Step title="Instalar">
+    ```bash
+    cargo install axon-lang
+    ```
+
+    Un binario, `axon`. Necesita un compilador de C en la máquina (los kernels
+    criptográficos y de tokenización son C23); en Windows, MSVC lo cubre.
+  </Step>
+
+  <Step title="Escribir un programa que transporta datos regulados">
+    ```axon
+    type PatientRecord compliance [HIPAA, GDPR] { ssn: String }
+    shield PHIShield { scan: [pii_leak] on_breach: halt severity: critical
+                       compliance: [HIPAA, GDPR] }
+    axonendpoint Api { method: POST path: "/p" body: PatientRecord
+                       execute: F output: FlowEnvelope<PatientRecord> shield: PHIShield
+                       backend: anthropic compliance: [HIPAA, GDPR] }
+    flow F(ssn: String) -> PatientRecord {
+      step R { ask: "summarize" output: PatientRecord } }
+    ```
+
+    Guárdalo como `app.axon`. Cuatro declaraciones: un **type** que transporta
+    dos clases regulatorias, un **shield** que las cubre, un **endpoint** que
+    cruza una frontera de confianza y un **flow** que hace el trabajo cognitivo.
+  </Step>
+
+  <Step title="Comprobarlo">
+    ```bash
+    axon check   app.axon   # verificación de cumplimiento en compilación
+    axon dossier app.axon   # postura regulatoria, en JSON
+    axon audit   app.axon --framework all   # análisis de brechas por marco
+    ```
+
+    `axon check` sale con `0`. El endpoint transporta `PatientRecord`, cuyas
+    clases son `{HIPAA, GDPR}`, y `PHIShield` cubre las dos.
+  </Step>
+
+  <Step title="Ahora rómpelo">
+    Borra `shield: PHIShield` del endpoint y vuelve a comprobar:
+
+    ```
+    X app.axon  1 error(s)
+      error [line 4]: axon-T957 axonendpoint 'Api' carries regulated data
+      (kappa = {GDPR, HIPAA}) across a trust boundary but declares no `shield:`.
+      Regulated boundaries require a shield whose `compliance:` covers the type's
+      kappa — the ESK coverage rule. […] Declaring the classes on the
+      endpoint's own `compliance:` does NOT cover them: that list is a label,
+      the shield is the control that acts on a breach.
+    ```
+
+    `axon check` sale con `1`.
+  </Step>
+</Steps>
+
+## Por qué importa
+
+Ese fallo es un **error de tipos, no un aviso de linter**. Nada de lo que viene
+después se construye.
+
+Y la regla es una diferencia de conjuntos real sobre las clases regulatorias que
+transportan los tipos de `body:` y `output:` de la frontera — así que un shield
+que cubra *algunas* también falla, nombrando exactamente las que le faltan. No
+es una comprobación de presencia sobre una etiqueta.
+
+<Warning>
+  La última frase del diagnóstico es la que sostiene todo. Declarar
+  `compliance: [HIPAA, GDPR]` en el propio endpoint **no** satisface la regla.
+  Esa lista es una *etiqueta*; el shield es el *control que actúa ante una
+  brecha*. Un sistema que aceptara la etiqueta te dejaría certificarte a ti
+  mismo.
+</Warning>
+
+## La errata tampoco te salva
+
+El vocabulario regulatorio es cerrado (`axon-T1214`). `compliance: [HIPPA]` no
+compila — se rechaza con la sugerencia `HIPAA`. Ese cierre es lo que hace sólida
+la regla de cobertura: sin él, una errata simétrica en el tipo y en el shield
+satisfaría la diferencia de conjuntos sin proteger nada.
+
+La misma regla de diferencia de conjuntos guarda las declaraciones `channel`
+(`axon-T1215`: un canal cuya carga transporta una clase regulada necesita un
+shield que la cubra antes de que `publish` pueda extruirla), y se vuelve a
+comprobar en ejecución, en el `publish`, para la IR que nunca pasó por el
+verificador.
+
+## Por dónde seguir
+
+<CardGroup cols={2}>
+  <Card title="Cumplimiento en compilación" icon="scale-balanced" href="/concepts/compile-time-compliance">
+    La regla completa, y qué demuestra y qué no exactamente.
+  </Card>
+  <Card title="Opciones de instalación" icon="download" href="/install">
+    Compilar desde el código, el binario del servidor y los feature flags.
+  </Card>
+</CardGroup>

@@ -1,0 +1,78 @@
+---
+title: "Tipos epistémicos"
+description: "La salida de un modelo no es una cadena. Lleva cuánto tiene derecho el sistema a creérsela — y el compilador no deja que una conjetura se convierta en un hecho."
+---
+
+Todos los frameworks tratan la salida de un LLM como un `string`. AXON la trata
+como un valor sobre un **retículo epistémico tipado**: el texto, más cuánto
+tiene derecho el sistema a creérselo.
+
+## El retículo
+
+```text
+doubt  <  speculate  <  believe  <  know
+```
+
+Un modo epistémico se escribe como un ámbito, y el compilador lo traduce a una
+función de restricción — una sobrescritura de temperatura y de muestreo por
+núcleo, más un conjunto de anclas inyectadas automáticamente que la generación
+debe satisfacer:
+
+```text
+C : Mode → (τ, p, A)
+
+C(know)      = (0.1, 0.3, {RequiresCitation, NoHallucination})
+C(believe)   = (0.3, 0.5, {NoHallucination})
+```
+
+Así que `know` no es un comentario sobre tus intenciones. Es una ventana de
+muestreo más estrecha *y* un requisito de citación, aplicados por el compilador.
+
+## La ley que lo hace sostener peso
+
+Un retículo que nadie impone es decoración. La regla que le da dientes está en
+las **fronteras de salida** — los puntos donde un valor deja de ser estado
+interno y pasa a ser algo sobre lo que una persona o un sistema de registro va a
+actuar:
+
+- `document` — un artefacto generado con huecos asertivos
+- `deliver` — una escritura en un CRM
+- `notify` — un mensaje que gasta la atención de una persona
+
+En cada uno de ellos, un valor que lleve un nivel inferior no puede presentarse
+como un hecho. El diagnóstico lo dice sin rodeos:
+
+> Un valor que sale del retículo epistémico hacia un sistema de registro no puede
+> ser más seguro que el razonamiento que lo produjo.
+
+La vía de escape es explícita y auditable, nunca silenciosa: adjuntar la
+procedencia (cada campo llega con su nivel, su confianza y su fuente — una
+conjetura etiquetada como conjetura), o responder por los valores dentro de un
+ámbito `epistemic { know }`, lo que hace que la afirmación sea *tuya*.
+
+<Warning>
+  Esta es la barrera contra el "blanqueo de aserciones", y es la razón de que el
+  retículo no sea cosmético. Sin ella, un valor `speculate` podría escribirse en
+  un CRM como si fuera `know`, y nada aguas abajo podría notar la diferencia —
+  que es exactamente el modo de fallo por el que la gente desconfía del
+  contenido generado.
+</Warning>
+
+## Los datos nacen sin confianza
+
+La misma disciplina cubre la entrada. El contenido que viene de fuera —páginas
+web raspadas, documentos ingeridos, filas recuperadas de un almacén— **nace
+`Untrusted`** por ley, no por convención, y degrada aquello que toca.
+
+Un retículo de confianza aparte gobierna cómo puede limpiarse:
+
+```text
+Untrusted  <  Scanned  <  Sanitized  <  Trusted
+```
+
+y el compilador verifica estáticamente que todo camino desde una fuente sin
+confianza hasta un destino de confianza pasa por al menos un `shield`.
+
+Por eso un flow que adquiere contenido de entrada adversario y se lo pasa a un
+paso cognitivo sin ningún shield en el ámbito se rechaza en compilación, en vez
+de producir una respuesta plausible derivada de una entrada envenenada.

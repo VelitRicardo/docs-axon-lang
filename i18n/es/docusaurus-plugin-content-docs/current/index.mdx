@@ -1,0 +1,69 @@
+---
+title: "AXON"
+description: "Un lenguaje compilado cuyo destino son los LLM, no las CPU — donde el cumplimiento normativo es un error de tipos, no un procedimiento."
+slug: /
+---
+
+AXON es un **lenguaje compilado cuyo destino es un modelo, no un procesador**.
+Escribes un programa; el compilador lo verifica de tipos, lo baja a una IR y un
+runtime nativo en Rust lo ejecuta contra un backend de LLM — con el mismo
+determinismo, los mismos diagnósticos y los mismos códigos de salida que
+esperas de un compilador.
+
+Lo relevante no es que orqueste prompts. Es lo que el compilador puede
+*rechazar*.
+
+## La afirmación, en una frase
+
+**Un programa que envía datos regulados a través de una frontera sin guardia no
+compila.**
+
+No "emite un aviso en ejecución". No "falla una auditoría más adelante".
+`axon check` sale con `1`, igual que ante un error de sintaxis, y nada de lo
+que viene después se construye.
+
+<Card title="Míralo fallar" icon="shield-halved" href="/quickstart">
+  Treinta segundos: instalar, escribir un programa que transporta PHI, borrarle
+  el shield y ver cómo el compilador lo rechaza por su nombre.
+</Card>
+
+## Qué te da eso
+
+<CardGroup cols={2}>
+  <Card title="Cumplimiento en compilación" icon="scale-balanced" href="/concepts/compile-time-compliance">
+    `type PatientRecord compliance [HIPAA, GDPR]` es un **tipo**. Toda frontera
+    que lo transporte debe declarar un shield cuya cobertura sea una diferencia
+    de conjuntos real sobre las clases regulatorias — y el vocabulario es
+    cerrado, así que una errata no puede satisfacerlo.
+  </Card>
+  <Card title="Tipos epistémicos" icon="brain" href="/concepts/epistemic-types">
+    La salida de un modelo no es una cadena. Lleva un nivel — `know`, `believe`,
+    `speculate`, `doubt` — y el lenguaje se niega a que una conjetura se blanquee
+    como hecho en una frontera de salida.
+  </Card>
+  <Card title="Un solo binario" icon="box" href="/install">
+    `cargo install axon-lang`. Un runtime nativo en Rust + C23: lexer, parser,
+    verificador de tipos, generador de IR, el runtime de efectos y la superficie
+    HTTP/WebSocket. Sin intérprete, sin Python.
+  </Card>
+  <Card title="Con prueba incorporada" icon="file-signature">
+    `axon pcc prove` emite un objeto de prueba verificable de forma
+    independiente; `axon pcc verify` vuelve a derivar las obligaciones desde el
+    artefacto, así que una compuerta de despliegue puede comprobar lo que un
+    build afirmó sin confiar en quien lo construyó.
+  </Card>
+</CardGroup>
+
+## Qué no afirma
+
+La honestidad sale más barata que una rectificación, así que: lo que aporta
+pertenecer al vocabulario regulatorio es una **comprobación automática en
+compilación** — cierre del vocabulario y cobertura de shield en toda frontera
+que transporte una clase regulada, reverificado en el despliegue.
+
+Lo que **no** aporta es la obligación *semántica* de cada norma. Lo que HIPAA
+exige en la práctica es cosa del diseño de tus shields y tus flows. AXON pone
+el mecanismo; tú pones la política. El motor de auditoría lo dice en la
+evidencia que emite, y su postura frente a FIPS 140-3 es *conforme
+algorítmicamente, no validada formalmente* — CAVP y CMVP son procesos de
+laboratorio que ningún compilador puede cerrar.

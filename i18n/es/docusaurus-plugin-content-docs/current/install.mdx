@@ -1,0 +1,83 @@
+---
+title: "Instalación"
+description: "Un binario desde crates.io, qué necesita de la máquina y cuánto cuestan de verdad las características opcionales."
+---
+
+## El canal canónico
+
+```bash
+cargo install axon-lang
+```
+
+Eso instala el binario `axon`. El crate se publica como `axon-lang`; la
+importación de la biblioteca es `use axon::*`.
+
+<Note>
+  La vía histórica por PyPI está cerrada. El intérprete de Python se retiró en
+  la v2.0.0 y el paquete es hoy una lápida que redirige aquí. La implementación
+  del lenguaje es 100% Rust + C23.
+</Note>
+
+## Requisitos previos
+
+| Requisito | Por qué |
+| --- | --- |
+| [Rust](https://rustup.rs) **1.95+** | Es el `rust-version` de todos los manifiestos. Una toolchain más antigua falla con un error de MSRV, no con un error de compilación. |
+| Un **compilador de C** funcionando (MSVC / clang / gcc) | `ring` —al que se llega a través de `rustls`, que es como este compilador habla HTTPS con cada proveedor de modelos— compila C incondicionalmente en su script de build. En Windows bastan las MSVC Build Tools; en Debian o Ubuntu, `build-essential`. |
+
+Se comprueban en tiempo de **build**, no de instalación. Si `cargo install` se
+detiene con un error de `cc` o del enlazador en lugar de un error de Rust, lo
+que falta es la toolchain de C.
+
+<Info>
+  **Sobre el requisito de C, con precisión.** Antes había dos orígenes. Uno era
+  nuestro: `axon-csys`, que compila el tokenizador y los kernels criptográficos
+  en C23, era una dependencia dura — así que una máquina sin `cc` no obtenía una
+  instalación lenta, obtenía un exit 101. Ese ya no está. Los kernels viven
+  ahora tras `--features csys-native`, y el build por defecto sirve la misma API
+  desde gemelos en Rust puro a los que juzgan las mismas compuertas de deriva.
+
+  El otro origen es `ring`, y ese no está en nuestra mano quitarlo.
+</Info>
+
+## Características
+
+La instalación por defecto es el compilador y la CLI de gobierno — `check`,
+`compile`, `run`, `dossier`, `sbom`, `audit`, `pcc prove`, `pcc verify` — y no
+añade ninguna dependencia más allá de eso. Todo lo pesado se activa a mano:
+
+| Característica | Qué activa | Qué cuesta |
+| --- | --- | --- |
+| `cli` *(por defecto)* | el compilador + la superficie de gobierno | — |
+| `server` | el servidor HTTP / SSE / NDJSON / WebSocket, y el binario `axon-server` | la pila de servicio de `axum` |
+| `postgres` | el plano de datos `axonstore` contra PostgreSQL real | ~36 crates — la mayor palanca sobre el tiempo de instalación |
+| `documents` | la superficie OOXML y `axon evidence-package` | compresión en Rust puro |
+| `csys-native` | los kernels C23: conteo exacto de tokens BPE, la frontera criptográfica | necesita una toolchain de C |
+
+Dejar `csys-native` apagado es una limitación acotada y etiquetada, no
+silenciosa: `count_tokens` devuelve una *estimación* en vez de un conteo BPE
+exacto, y `mandate` pierde sus prohibiciones de sesgo de logits de nivel 1 —
+mientras que el nivel 2, el bucle de refinamiento que *es* la garantía, queda
+intacto.
+
+## Verificar la instalación
+
+```bash
+axon --version
+axon check app.axon
+```
+
+Tanto `axon --version` como `axon version` imprimen la misma cadena.
+
+## Compilar desde el código
+
+```bash
+git clone https://github.com/VelitRicardo/axon-lang
+cd axon-lang/axon-rs
+cargo build --release
+```
+
+El workspace son cuatro crates: `axon-lang` (el runtime y la CLI),
+`axon-frontend` (lexer, parser, verificador de tipos, generador de IR — cero
+dependencias en ejecución), `axon-csys` (los kernels C23) y `axon-agora` (los
+conectores sociales gobernados).
