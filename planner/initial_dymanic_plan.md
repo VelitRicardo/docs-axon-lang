@@ -1,6 +1,6 @@
-# AXON Docs — Plan Vivo (v0.10)
+# AXON Docs — Plan Vivo (v0.11)
 
-> **Estado:** F3 EJECUTADA · en F4 · iterable · 14 de 16 cerradas — solo quedan D4 y D6,
+> **Estado:** F4 EJECUTADA · en F5 · iterable · 14 de 16 cerradas — solo quedan D4 y D6,
 > que son recomendaciones aplicadas salvo objeción y no bloquean nada
 > **Última revisión:** 2026-08-21
 > **Regla del documento:** este archivo es la única fuente de verdad del proyecto
@@ -595,7 +595,7 @@ Tres detalles que, si se pasan por alto, cuestan un día de depuración:
 | **F1** ✔ Andamiaje | `npm init docusaurus@latest . classic --typescript`, borrado del contenido demo, **`blog: false`**, `url`/`baseUrl` definitivos, i18n `en`+`es`, favicon e identidad, metadata §15 | `npm run build` verde y sitio vacío pero nuestro |
 | **F2** ✔ Tokens | `tokens.css` completo + mapeo `--ifm-*` + modo oscuro + tipografía self-hosted | cambiar 3 variables cambia todo el sitio; contraste AA verificado |
 | **F3** ✔ Theme | swizzles (Navbar, Footer, DocItem, CodeBlock, TOC) + componentes §7 + landing | landing publicable, cero hex fuera de tokens |
-| **F4** Sintaxis | gramática Prism `axon` + tema de código | los dos fixtures se ven correctos |
+| **F4** ✔ Sintaxis | gramática Prism `axon` + tema de código | los dos fixtures se ven correctos |
 | **F5** Contenido | bloques 1 y 2 del §5 (Empezar + Lenguaje) escritos | alguien ajeno escribe y ejecuta su primer agente solo con la doc |
 | **F5b** Capacidades | plugin generador desde `capabilities.toml` + gate de CI (§5.6) | toda capacidad del catálogo tiene página; ninguna URL del compilador 404 |
 | **F5c** Frontera | bloque 5: verificar vs. certificar, tabla open-core, `/licensing`, flujos de red, continuidad | un comité de compras entiende qué compra sin ver un precio |
@@ -749,6 +749,21 @@ Keywords de trabajo: `axon-lang`, `cognitive runtime`, `cognitive OS`,
 
 ## 16. Registro de iteraciones
 
+- **v0.11 · 2026-08-21** — **F4 ejecutada.** Gramática Prism **generada desde
+  el compilador**: `scripts/sync-grammar.py` descarga
+  `axon-frontend/src/tokens.rs` del repo público y extrae las palabras clave de
+  `keyword_type()` y `is_declaration_keyword()`. Resultado: **62 declaraciones
+  y 115 palabras clave** — la lista del `axon-lsp` habría dado 11
+  declaraciones, así que la regla de fuentes del §2 evitó un error grande.
+  Tema de código con `var(--syntax-*)`: **un solo tema para los dos modos**,
+  imposible de desincronizar. Registro por eject de `prism-include-languages`
+  (deuda aceptada y documentada: es el único punto donde Docusaurus expone su
+  instancia de Prism). Página `docs/syntax-check.mdx` en `draft: true` como
+  control de regresión visual, fuera del build de producción; 11/11
+  clasificaciones correctas verificadas sobre el HTML renderizado.
+  **Corrección §8:** los tipos no se enumeran, se reconocen por forma
+  (PascalCase); una lista quedaría atada a una versión del compilador y dejaría
+  sin pintar los tipos del propio usuario.
 - **v0.10 · 2026-08-21** — **F3 ejecutada.** Capa `components.css` y cinco
   componentes editoriales (`Masthead`, `Ledger`/`LedgerItem`, `DeclCard`,
   `CliBlock`, `VersionBadge`), registrados globalmente en MDX vía envoltorio de

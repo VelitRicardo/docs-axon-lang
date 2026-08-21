@@ -1,4 +1,4 @@
-import {themes as prismThemes} from 'prism-react-renderer';
+import axonPrismTheme from './src/prism/theme';
 import type {Config} from '@docusaurus/types';
 import type * as Preset from '@docusaurus/preset-classic';
 
@@ -152,8 +152,13 @@ const config: Config = {
       copyright: `AXON — by ${AUTHOR_NAME}. Apache 2.0.`,
     },
     prism: {
-      theme: prismThemes.github,
-      darkTheme: prismThemes.dracula,
+      // Un solo tema para los dos modos: sus colores son var(--syntax-*), que
+      // ya cambian con el tema. Dos temas podrían desincronizarse; uno, no.
+      theme: axonPrismTheme,
+      darkTheme: axonPrismTheme,
+      // La gramática de `axon` no se lista aquí: no viene con prismjs. Se
+      // registra en src/theme/prism-include-languages.ts.
+      additionalLanguages: ['bash', 'rust', 'toml'],
     },
   } satisfies Preset.ThemeConfig,
 };

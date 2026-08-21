@@ -1,0 +1,91 @@
+---
+id: syntax-check
+title: Syntax check
+sidebar_position: 99
+description: Página de verificación del resaltado de sintaxis de AXON.
+draft: true
+---
+
+# Syntax check
+
+Página de control de la gramática Prism. No forma parte de la documentación:
+`draft: true` la deja fuera del build de producción.
+
+```axon title="asistente.axon"
+// ---- Persona: cómo se expresa el modelo -------------------------
+persona AnalistaInvestigador {
+    domain: ["investigación", "análisis de datos", "síntesis"]
+    tone: analytical
+    confidence_threshold: 0.8
+    cite_sources: true
+}
+
+// ---- Herramientas: las que el agente PUEDE alcanzar -------------
+// Ambas son built-in del runtime (provider native, sin LLM).
+tool Calculator {
+    provider: native
+    timeout: 5s
+}
+
+tool DateTimeTool {
+    provider: native
+    timeout: 5s
+}
+
+// ---- Shield: defensa en tiempo de compilación -------------------
+shield GuardiaEntrada {
+    scan: [prompt_injection]
+    on_breach: halt
+    severity: high
+}
+
+```
+
+Formas léxicas que deben pintar distinto:
+
+```axon
+//! comentario interno de módulo
+/// comentario de documentación
+// comentario normal
+/* bloque */
+
+type Confidence(0.0..1.0)
+
+type PHIFinding {
+  category: FactualClaim,
+  rationale: Opinion?
+}
+
+tool Calculator {
+  provider: native
+  timeout: 5s
+  retries: 3
+  enabled: true
+}
+
+flow ScreenClinicalNote(note: Document) -> PHIReport {
+  step Detect {
+    given: note
+  }
+}
+```
+
+Construcciones que faltaban por cubrir:
+
+```axon
+agent Asistente {
+  goal: "Responder con una respuesta breve y verificada"
+  tools: [Calculator, DateTimeTool]
+  strategy: react
+  max_iterations: 6
+  max_tokens: 8000
+}
+
+shield GuardiaEntrada {
+  scan: [prompt_injection]
+  on_breach: halt
+  severity: high
+}
+
+run Asistente(question) -> Answer
+```
