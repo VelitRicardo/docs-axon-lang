@@ -1,6 +1,6 @@
-# AXON Docs — Plan Vivo (v0.11)
+# AXON Docs — Plan Vivo (v0.12)
 
-> **Estado:** F4 EJECUTADA · en F5 · iterable · 14 de 16 cerradas — solo quedan D4 y D6,
+> **Estado:** F4 EJECUTADA · F5 REPLANTEADA · iterable · 14 de 16 cerradas — solo quedan D4 y D6,
 > que son recomendaciones aplicadas salvo objeción y no bloquean nada
 > **Última revisión:** 2026-08-21
 > **Regla del documento:** este archivo es la única fuente de verdad del proyecto
@@ -275,6 +275,57 @@ documentación, no un embudo.** Consecuencias concretas:
 puerta"*. Una doc que no vende mientras el producto no vende es coherente con
 esa tesis — y cuando llegue el momento de vender, el sitio ya tendrá la
 autoridad que hace que la venta no tenga que empujar.
+
+---
+
+## 5.8 ⚠ HALLAZGO — la documentación ya existe (v0.12)
+
+Con acceso de solo lectura al repo del lenguaje (commit `4086b3a`, 2026-08-21)
+aparece `axon-lang/docs/`: **un sitio Mintlify completo y escrito**.
+
+| Medida | Valor |
+|---|---|
+| Archivos `.mdx` | **203** |
+| Palabras | **109.302** |
+| Páginas de referencia de primitivas | **99** (`reference/primitives/`) |
+| Grupos de navegación en `docs.json` | 22 |
+| Doctrinas · Plantillas · Compliance · Gramática | 22 · 34 · 10 · 3 |
+| Bloques de código | 110 `axon`, 235 `text`, 8 `ebnf` |
+
+**Esto invierte F5: el trabajo no es escribir, es migrar.** Escribir 62 fichas
+de declaración a mano cuando existen 99 páginas de referencia ya redactadas
+—con nota de atestación, gramática y versión de aparición— sería tirar el
+trabajo del autor y producir algo peor.
+
+La calidad del corpus es alta: cada primitiva trae `<Info>` de atestación
+(*"una fixture escrita en AXON se compila y se ejecuta en el test suite"*),
+bloque `## Grammar`, `**Since** vX.Y.Z`, superficie y ejemplos reales.
+
+### Lo que la migración implica de verdad
+
+1. **La IA del §5 se sustituye por la del corpus.** El `docs.json` tiene una
+   arquitectura mucho más rica que mi borrador: Reference dividida en Cognition,
+   Operators, Data plane, Wire, Cognitive I/O y Session types. Mi §5 fue un
+   borrador razonable con información incompleta; el corpus manda.
+2. **Shims de componentes Mintlify.** El corpus usa `<Info>` (66), `<Warning>`
+   (19), `<Note>` (16), `<Card>` (7), `<Step>` (9). Se implementan como
+   componentes en `MDXComponents` y las páginas se migran **sin tocar su
+   cuerpo** — que es la única forma de migrar 109k palabras sin introducir
+   errores.
+3. **Sidebar generado desde `docs.json`**, no escrito a mano: 22 grupos.
+4. **Placeholders en prosa.** Hay `<Name>`, `<T>`, `<Tool>` fuera de bloques de
+   código. MDX v3 los interpreta como componentes y **falla el build**. Es un
+   fallo ruidoso, no silencioso, así que el propio build los localiza uno a uno.
+5. **El coste del español se dispara.** 109k palabras × 2 no es una fase, es un
+   proyecto. Ver §14-D17.
+
+### Revisión de fases
+
+| Fase | Antes | Ahora |
+|---|---|---|
+| **F5** | Escribir "Empezar" + "Lenguaje" | **Migrar** el corpus: shims, script de conversión, sidebar desde `docs.json`, arreglo de placeholders |
+| **F5b** | Capacidades | sin cambios — sigue pendiente de `capabilities.toml` |
+| **F5c** | Frontera | sin cambios |
 
 ---
 
@@ -652,6 +703,8 @@ iteraciones sucesivas; el andamiaje ya los contempla.
 |---|---|---|
 | **D4** | Alcance de la landing | *Recomendación aplicada salvo objeción:* landing editorial en la raíz de `/axon-docs/`, no una segunda home comercial (esa es `/axon`). |
 | **D6** | Profundidad de la sección "Ediciones y frontera" | *Resuelto en la práctica por D11:* se publica lo que §10.4 del modelo marca como público, ni una línea más. Confirmar que estás de acuerdo. |
+| **D16** | ¿Este sitio **reemplaza** el Mintlify de `axon-lang/docs/`? | Si sí: ¿el corpus se **mueve** aquí y se retira de allí, o se **sincroniza** desde el repo del lenguaje? Mover es más simple; sincronizar mantiene la doc junto al código que documenta. |
+| **D17** | Alcance del español sobre 109k palabras | *Recomendación:* ES completo para Getting started, The idea, Grammar y Doctrines (lo que convierte y lo que se lee entero); referencia de primitivas en EN, con traducción por demanda. Traducir 99 fichas técnicas al español antes de tener lectores es gasto sin retorno. |
 | **D14** | ¿Dónde vive la página comercial `/axon`? | El modelo la sitúa en `ricardovelit.com/axon`, pero la compra la pusiste en `depthcon.io`. ¿Precios en `/axon` y checkout en depthcon, o todo lo comercial en depthcon? Afecta a dónde apuntan los CTA de la doc. |
 
 ---
@@ -749,6 +802,14 @@ Keywords de trabajo: `axon-lang`, `cognitive runtime`, `cognitive OS`,
 
 ## 16. Registro de iteraciones
 
+- **v0.12 · 2026-08-21** — **F5 replanteada tras acceso de solo lectura al repo
+  del lenguaje** (commit `4086b3a`). Descubierto `axon-lang/docs/`: sitio
+  Mintlify con **203 MDX y 109.302 palabras**, incluidas **99 páginas de
+  referencia de primitivas**. F5 pasa de *escribir* a *migrar* (§5.8). La IA
+  del §5 queda sustituida por la del `docs.json`, más rica. Nuevas D16 (¿mover
+  o sincronizar?) y D17 (alcance del español). **Regla de la copia:** el clon
+  vive en el scratchpad de la sesión, fuera de `Proyectos/`, con `pushurl`
+  neutralizado — no existe checkout del autor que pueda ensuciarse.
 - **v0.11 · 2026-08-21** — **F4 ejecutada.** Gramática Prism **generada desde
   el compilador**: `scripts/sync-grammar.py` descarga
   `axon-frontend/src/tokens.rs` del repo público y extrae las palabras clave de
