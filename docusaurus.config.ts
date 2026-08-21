@@ -134,7 +134,8 @@ const config: Config = {
           title: 'AXON',
           items: [
             {label: 'What is AXON', to: '/'},
-            {label: 'Install', to: '/getting-started/install'},
+            {label: 'Quickstart', to: '/quickstart'},
+            {label: 'Install', to: '/install'},
           ],
         },
         {

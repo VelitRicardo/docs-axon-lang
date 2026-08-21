@@ -1,6 +1,6 @@
-# AXON Docs — Plan Vivo (v0.12)
+# AXON Docs — Plan Vivo (v0.13)
 
-> **Estado:** F4 EJECUTADA · F5 REPLANTEADA · iterable · 14 de 16 cerradas — solo quedan D4 y D6,
+> **Estado:** F5 EN CURSO — corpus migrado · iterable · 14 de 16 cerradas — solo quedan D4 y D6,
 > que son recomendaciones aplicadas salvo objeción y no bloquean nada
 > **Última revisión:** 2026-08-21
 > **Regla del documento:** este archivo es la única fuente de verdad del proyecto
@@ -689,6 +689,8 @@ iteraciones sucesivas; el andamiaje ya los contempla.
 | **D5** ✔ | Blog | **Eliminado.** `blog: false`; changelog como página de docs curada |
 | **D7** ✔ | Repo canónico | **<https://github.com/VelitRicardo/axon-lang>** (OSS) + Enterprise privada |
 | **D8** ✔ | Algolia | **Cuenta propia, ya creada.** Claves en F7 |
+| **D16** ✔ | Mintlify | **Se descarta por completo.** El corpus se **mueve** aquí; deja de vivir en `axon-lang/docs/` |
+| **D17** ✔ | Alcance del ES | **30 páginas · 23.754 palabras** — Empezar, La idea, Gramática y Doctrinas (21% del texto). La referencia de primitivas queda en EN, traducida por demanda |
 | **D10** ✔ | Instalación | **`cargo install axon-lang`**, comando único. Implica documentar el prerrequisito de toolchain Rust |
 | **D11** ✔ | Frontera OSS/Enterprise | La fija `axon-modelo-negocio-licenciamiento` v2.1 §3.2 + RFC-003. La doc la **publica** (§10.4 del modelo la marca pública) y **no** publica precios |
 | **D12** ✔ | Logo | **Marca geométrica de AXON** provista por el autor. Ver §15.1 |
@@ -703,8 +705,8 @@ iteraciones sucesivas; el andamiaje ya los contempla.
 |---|---|---|
 | **D4** | Alcance de la landing | *Recomendación aplicada salvo objeción:* landing editorial en la raíz de `/axon-docs/`, no una segunda home comercial (esa es `/axon`). |
 | **D6** | Profundidad de la sección "Ediciones y frontera" | *Resuelto en la práctica por D11:* se publica lo que §10.4 del modelo marca como público, ni una línea más. Confirmar que estás de acuerdo. |
-| **D16** | ¿Este sitio **reemplaza** el Mintlify de `axon-lang/docs/`? | Si sí: ¿el corpus se **mueve** aquí y se retira de allí, o se **sincroniza** desde el repo del lenguaje? Mover es más simple; sincronizar mantiene la doc junto al código que documenta. |
-| **D17** | Alcance del español sobre 109k palabras | *Recomendación:* ES completo para Getting started, The idea, Grammar y Doctrines (lo que convierte y lo que se lee entero); referencia de primitivas en EN, con traducción por demanda. Traducir 99 fichas técnicas al español antes de tener lectores es gasto sin retorno. |
+
+
 | **D14** | ¿Dónde vive la página comercial `/axon`? | El modelo la sitúa en `ricardovelit.com/axon`, pero la compra la pusiste en `depthcon.io`. ¿Precios en `/axon` y checkout en depthcon, o todo lo comercial en depthcon? Afecta a dónde apuntan los CTA de la doc. |
 
 ---
@@ -802,6 +804,18 @@ Keywords de trabajo: `axon-lang`, `cognitive runtime`, `cognitive OS`,
 
 ## 16. Registro de iteraciones
 
+- **v0.13 · 2026-08-21** — **Corpus migrado.** 203 páginas, 3 imágenes y
+  sidebar de 22 grupos generado desde `docs.json`. `scripts/migrate-docs.py`
+  copia **sin tocar el cuerpo**: los únicos cambios son `slug: /` en la portada
+  y dos enlaces que apuntaban a archivos del repo, listados uno a uno en el
+  script en vez de por heurística. Los componentes de Mintlify no se
+  convierten: se implementan con la misma API en `src/components/Mintlify`
+  (`<Info>`, `<Warning>`, `<Note>`, `<Danger>`, `<Card>`, `<CardGroup>`,
+  `<Steps>`, `<Step>`), con estética propia. `icon` se acepta y se ignora:
+  el corpus usa Font Awesome, que no está en el sitio. Build verde, 408 páginas
+  (EN+ES), la gramática de F4 pinta en 103 de ellas. i18n: cadenas de tema y
+  las 22 categorías del sidebar traducidas. **Medido el alcance de D17:** 30
+  páginas y 23.754 palabras, el 21% del corpus.
 - **v0.12 · 2026-08-21** — **F5 replanteada tras acceso de solo lectura al repo
   del lenguaje** (commit `4086b3a`). Descubierto `axon-lang/docs/`: sitio
   Mintlify con **203 MDX y 109.302 palabras**, incluidas **99 páginas de

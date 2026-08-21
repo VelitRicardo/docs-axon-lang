@@ -1,0 +1,94 @@
+{
+  "version.label": {
+    "message": "Next",
+    "description": "The label for version current"
+  },
+  "sidebar.docs.category.Getting started": {
+    "message": "Empezar",
+    "description": "The label for category 'Getting started' in sidebar 'docs'"
+  },
+  "sidebar.docs.category.The idea": {
+    "message": "La idea",
+    "description": "The label for category 'The idea' in sidebar 'docs'"
+  },
+  "sidebar.docs.category.Examples · Agents": {
+    "message": "Ejemplos · Agentes",
+    "description": "The label for category 'Examples · Agents' in sidebar 'docs'"
+  },
+  "sidebar.docs.category.Examples · Composition": {
+    "message": "Ejemplos · Composición",
+    "description": "The label for category 'Examples · Composition' in sidebar 'docs'"
+  },
+  "sidebar.docs.category.Examples · Data": {
+    "message": "Ejemplos · Datos",
+    "description": "The label for category 'Examples · Data' in sidebar 'docs'"
+  },
+  "sidebar.docs.category.Examples · Effects": {
+    "message": "Ejemplos · Efectos",
+    "description": "The label for category 'Examples · Effects' in sidebar 'docs'"
+  },
+  "sidebar.docs.category.Examples · Endpoints": {
+    "message": "Ejemplos · Endpoints",
+    "description": "The label for category 'Examples · Endpoints' in sidebar 'docs'"
+  },
+  "sidebar.docs.category.Examples · Memory": {
+    "message": "Ejemplos · Memoria",
+    "description": "The label for category 'Examples · Memory' in sidebar 'docs'"
+  },
+  "sidebar.docs.category.Examples · Session Types": {
+    "message": "Ejemplos · Tipos de sesión",
+    "description": "The label for category 'Examples · Session Types' in sidebar 'docs'"
+  },
+  "sidebar.docs.category.Examples · Shields": {
+    "message": "Ejemplos · Shields",
+    "description": "The label for category 'Examples · Shields' in sidebar 'docs'"
+  },
+  "sidebar.docs.category.Examples · Streaming": {
+    "message": "Ejemplos · Streaming",
+    "description": "The label for category 'Examples · Streaming' in sidebar 'docs'"
+  },
+  "sidebar.docs.category.Examples · Validation": {
+    "message": "Ejemplos · Validación",
+    "description": "The label for category 'Examples · Validation' in sidebar 'docs'"
+  },
+  "sidebar.docs.category.Doctrines": {
+    "message": "Doctrinas",
+    "description": "The label for category 'Doctrines' in sidebar 'docs'"
+  },
+  "sidebar.docs.category.Grammar": {
+    "message": "Gramática",
+    "description": "The label for category 'Grammar' in sidebar 'docs'"
+  },
+  "sidebar.docs.category.Compliance": {
+    "message": "Cumplimiento",
+    "description": "The label for category 'Compliance' in sidebar 'docs'"
+  },
+  "sidebar.docs.category.Templates": {
+    "message": "Plantillas",
+    "description": "The label for category 'Templates' in sidebar 'docs'"
+  },
+  "sidebar.docs.category.Reference · Cognition": {
+    "message": "Referencia · Cognición",
+    "description": "The label for category 'Reference · Cognition' in sidebar 'docs'"
+  },
+  "sidebar.docs.category.Reference · Operators": {
+    "message": "Referencia · Operadores",
+    "description": "The label for category 'Reference · Operators' in sidebar 'docs'"
+  },
+  "sidebar.docs.category.Reference · Data plane": {
+    "message": "Referencia · Plano de datos",
+    "description": "The label for category 'Reference · Data plane' in sidebar 'docs'"
+  },
+  "sidebar.docs.category.Reference · Wire": {
+    "message": "Referencia · Transporte",
+    "description": "The label for category 'Reference · Wire' in sidebar 'docs'"
+  },
+  "sidebar.docs.category.Reference · Cognitive I/O": {
+    "message": "Referencia · E/S cognitiva",
+    "description": "The label for category 'Reference · Cognitive I/O' in sidebar 'docs'"
+  },
+  "sidebar.docs.category.Reference · Session types": {
+    "message": "Referencia · Tipos de sesión",
+    "description": "The label for category 'Reference · Session types' in sidebar 'docs'"
+  }
+}

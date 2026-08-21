@@ -1,0 +1,42 @@
+{
+  "link.title.AXON": {
+    "message": "AXON",
+    "description": "The title of the footer links column with title=AXON in the footer"
+  },
+  "link.title.Project": {
+    "message": "Proyecto",
+    "description": "The title of the footer links column with title=Project in the footer"
+  },
+  "link.title.Author": {
+    "message": "Autor",
+    "description": "The title of the footer links column with title=Author in the footer"
+  },
+  "link.item.label.What is AXON": {
+    "message": "Qué es AXON",
+    "description": "The label of footer link with label=What is AXON linking to /"
+  },
+  "link.item.label.Quickstart": {
+    "message": "Inicio rápido",
+    "description": "The label of footer link with label=Quickstart linking to /quickstart"
+  },
+  "link.item.label.Install": {
+    "message": "Instalación",
+    "description": "The label of footer link with label=Install linking to /install"
+  },
+  "link.item.label.GitHub": {
+    "message": "GitHub",
+    "description": "The label of footer link with label=GitHub linking to https://github.com/VelitRicardo/axon-lang"
+  },
+  "link.item.label.Editions": {
+    "message": "Ediciones",
+    "description": "The label of footer link with label=Editions linking to https://ricardovelit.com/axon"
+  },
+  "link.item.label.Ricardo Velit": {
+    "message": "Ricardo Velit",
+    "description": "The label of footer link with label=Ricardo Velit linking to https://ricardovelit.com"
+  },
+  "copyright": {
+    "message": "AXON — by Ricardo Velit. Apache 2.0.",
+    "description": "The footer copyright"
+  }
+}

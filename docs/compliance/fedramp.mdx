@@ -1,0 +1,195 @@
+---
+title: "FedRAMP — Federal Risk and Authorization Management Program"
+description: "How a FedRAMP-authorized service is annotated in AXON — why FedRAMP is not a regulatory class, what you declare instead, and what the compiler actually checks about it."
+---
+
+**Scope:** cloud services offered to US federal agencies. Operated
+by GSA's PMO; rests on NIST SP 800-53 control catalogues.
+
+**FedRAMP is not a regulatory class, and there is no
+`FedRAMP_Moderate` annotation.** The regulatory vocabulary is
+closed — `axon-T1214` refuses any label outside it — and it holds
+*sources of obligation*: statutes like FISMA, control standards
+like NIST 800-53. FedRAMP is neither. It is the **authorization
+program** that selects a baseline from the 800-53 catalogue, has a
+3PAO assess it, and issues an ATO. That is a fact about who signed
+off on your service; it is not a property of the data crossing a
+boundary, which is what a class has to be for the coverage rule to
+mean anything.
+
+So what a FedRAMP-authorized service declares is the statute and
+the catalogue:
+
+```text
+compliance: [FISMA, NIST_800_53]
+```
+
+The baseline — Low, Moderate or High — belongs where your
+assessment programme already records it: the SSP, the SAR, the
+ATO letter. Writing it into the program text would add a label the
+compiler cannot check and an auditor does not read from source.
+See [Regulatory classes](../compliance/regulatory-classes) for the
+full list of fifteen.
+
+This page focuses on the **AXON-enforceable subset** of the
+800-53 catalogue — AC (access control), AU (audit + accountability),
+SC (system + communications protection), SI (system + information
+integrity), and IR (incident response).
+
+## Declaring a FedRAMP-authorized service
+
+```text
+type CitizenRecord compliance [FISMA, NIST_800_53] {
+    case_id: String,
+    citizen_id: String,
+    benefit_class: BenefitClass
+}
+
+axonstore CaseFile
+    compliance: [FISMA, NIST_800_53]
+    backend: postgresql
+    isolation: serializable
+    encryption: at_rest
+    retention: 7y
+    on_breach: raise
+
+axonendpoint UpdateCase {
+    flow: UpdateCaseFlow
+    method: PUT
+    route: "/v1/cases/{case_id}"
+    body: CitizenRecord
+    shield: AgencyShield
+    compliance: [FISMA, NIST_800_53]
+}
+```
+
+The `shield:` is not decoration. `CitizenRecord` carries a κ, and an
+endpoint that carries regulated data across a trust boundary
+without a shield covering that κ is refused — see below.
+
+## What the compiler enforces statically
+
+Two things, and they are the same two for every class in the
+vocabulary — there is no per-framework rule table:
+
+| Check | What it does |
+|---|---|
+| `axon-T1214` | Every label in a `compliance:` list is a member of the closed vocabulary. `FedRAMP_Moderate` is refused here, with a suggestion. |
+| `axon-T957` | An `axonendpoint` whose body type carries a κ may not cross the trust boundary unless it declares a `shield:` whose own `compliance:` covers that κ. The endpoint's own `compliance:` list does **not** cover it: that list is the claim, the shield is the control that acts on a breach. `axon-T1215` is the same law for a `channel`. |
+
+What the compiler does **not** do, however the declaration is
+written: it does not require `auth:`, does not select an isolation
+level, does not turn on encryption, does not check FIPS 199
+categorisation, and does not infer that one class implies another.
+Those are fields you declare and an assessor reads. A compliance
+label buys you exactly the coverage rule above — which is a real
+guarantee, and a smaller one than a table of per-baseline
+enforcement would suggest.
+
+## What the runtime enforces
+
+| Control family | AXON runtime enforcement |
+|---|---|
+| AC — access control | Every request is authenticated, authorised, and recorded with `(subject, role, resource, action, decision, timestamp)`. |
+| AU — audit + accountability | The hash-linked + signed audit chain provides AU-9 (audit info protection) and AU-10 (non-repudiation). |
+| SC — system + comms protection | Transport: wss:// only; storage: at-rest encryption; in-process: the v2.0.0 cross-tenant isolation gate. |
+| SI — system + info integrity | The v2.0.0 D4 + D5 validation + the audit chain integrity (hash + signature) cover SI-7 (software/firmware/info integrity) and SI-10. |
+| IR — incident response | Structured incident records flow to the compliance event store; the playbook consumes them for IR-4 (handling) and IR-6 (reporting). |
+| CP — contingency planning | Backup integrity (CP-9) — the audit chain hash is a self-verifying snapshot of the data plane. |
+
+## What you still attest manually
+
+- **System Security Plan (SSP)** + **POA&M** (Plan of Action &
+  Milestones).
+- **3PAO assessment** + **Security Assessment Report (SAR)**.
+- **Provisional ATO** (JAB) or **Agency ATO**.
+- **Annual continuous monitoring** + monthly POA&M updates.
+- **Physical + personnel controls** (PE, PS, AT families).
+- **Configuration management** (CM family) — version-control
+  evidence flows out via the deployment pipeline.
+- **Contingency tests** — annual.
+- **Supply chain risk management** (SR family).
+
+## Baseline selection
+
+| Baseline | When to choose | Indicative AXON pattern |
+|---|---|---|
+| **FedRAMP Low** | Public-facing, low-impact information (FIPS 199 = L) | Smaller agencies, public-data portals |
+| **FedRAMP Moderate** | Most agency missions (FIPS 199 = M) | Default for citizen-services, case-management, benefits |
+| **FedRAMP High** | National security, life-safety (FIPS 199 = H) | Healthcare for VA, law-enforcement, financial intelligence |
+
+The compiler does **not** check FIPS 199 categorisation — that is
+the operator's call documented in the SSP.
+
+## Common patterns
+
+### Pattern 1 — Agency benefits-eligibility endpoint
+
+```text
+type BenefitsEligibility compliance [FISMA, NIST_800_53] {
+    citizen_id: String,
+    program: BenefitProgram,
+    decision: EligibilityDecision,
+    rationale: String
+}
+
+flow DetermineEligibility(req: EligibilityRequest) -> BenefitsEligibility { … }
+
+axonendpoint EligibilityAPI {
+    flow: DetermineEligibility
+    method: POST
+    route: "/v1/eligibility"
+    compliance: [FISMA, NIST_800_53, SOC2]
+    requires: [benefits.evaluate]
+}
+```
+
+This matches the canonical example at
+`examples/government_reference.axon`.
+
+### Pattern 2 — High-baseline audit-log query
+
+```text
+flow QueryAuditForAUDeep(window: TimeWindow) -> List<AuditRow> {
+    step Query {
+        given: window
+        retrieve: AuditLog where tag = "NIST_800_53" AND window
+        output: List<AuditRow>
+    }
+    return Query.output
+}
+```
+
+The audit query is itself audited (every audit row referencing
+AU-12 emits its own AU-2 entry, indirect access tracking). Filter
+on the class you actually declared: the audit rows carry the κ from
+the declaration, and there is no baseline recorded there to filter
+on.
+
+### Pattern 3 — Cross-agency data sharing
+
+```text
+axonendpoint ShareToOtherAgency {
+    flow: ShareCaseRoutine
+    method: POST
+    route: "https://partner.gov/share"
+    compliance: [FISMA, NIST_800_53]
+    transfer_boundary: ISA_2024_017    # closed catalogue of ISAs
+}
+```
+
+The `transfer_boundary:` field references the Information Sharing
+Agreement (ISA) between the source and destination agencies; the
+runtime refuses to dispatch without a valid ISA reference.
+
+## When NOT to use FedRAMP
+
+- **Non-federal customers.** A SaaS serving only commercial
+  customers does not need FedRAMP — pick SOC2, ISO 27001, HIPAA
+  per the data type.
+- **Tools used internally by federal staff** that don't store
+  federal information. The boundary is "is federal data in
+  scope?", not "is the user federal?"
+- **SaaS already authorized through agency-specific programs**
+  (StateRAMP, TX-RAMP, GovRAMP, …). The state programs reuse
+  FedRAMP artifacts; AXON annotations can mirror.
