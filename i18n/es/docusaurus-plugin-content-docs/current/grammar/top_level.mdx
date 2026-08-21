@@ -1,0 +1,138 @@
+---
+title: "Primitivas de nivel superior frente a anidadas"
+description: "Tabla cerrada de la superficie de cada primitiva de AXON — qué se sostiene sola en la raíz del programa y qué solo aparece anidado dentro de otra construcción."
+---
+
+Toda primitiva de AXON es o bien **de nivel superior** (se sostiene sola en la
+raíz del programa) o bien **anidada** (solo aparece dentro de otra
+construcción). El compilador lo impone en tiempo de parseo: una declaración
+`step` fuera de todo `flow` es un error de sintaxis; una declaración `flow`
+*dentro* de otro `flow`, también.
+
+Esta página es la tabla autoritativa. Cuando un agente dude sobre dónde va una
+primitiva, debe consultar este recurso — toda decisión se sigue de una fila.
+
+## Cómo leer esta tabla
+
+- **Superficie** — la palabra clave de AXON tal y como aparece en el código.
+- **Nivel superior** — `✓` si la palabra clave abre una declaración de nivel
+  superior; `✗` si solo aparece anidada.
+- **Vive dentro de** — para las primitivas anidadas, la construcción o
+  construcciones que pueden contenerla.
+- **Categoría** — la familia a la que pertenece la primitiva (alimenta la
+  faceta `axon.primitives(filter)`).
+- **Desde** — el ciclo que la introdujo.
+
+## Cognición
+
+| Superficie | Nivel superior | Vive dentro de | Desde |
+|---|:---:|---|---|
+| `persona`  | ✓ | — (referenciada por `run … as` y `step … use`) | v0.1.0 |
+| `context`  | ✓ | — (referenciado por `run … within`)            | v0.1.0 |
+| `flow`     | ✓ | —                                              | v0.1.0 |
+| `anchor`   | ✓ | — (referenciado por `run … constrained_by [...]`) | v0.1.0 |
+| `tool`     | ✓ | — (referenciada implícitamente por la superficie de tools) | v0.1.0 |
+| `intent`   | ✓ | —                                              | v0.1.0 |
+| `memory`   | ✓ | —                                              | v0.1.0 |
+| `agent`    | ✓ | —                                              | v0.1.0 |
+| `step`     | ✗ | `flow`                                         | v0.1.0 |
+| `reason`   | ✗ | `flow` (hermano de `step`) — también cuerpo de `step` | v0.1.0 |
+| `probe`    | ✗ | `flow`, cuerpo de `step`                       | v0.1.0 |
+| `validate` | ✗ | `flow`                                         | v0.1.0 |
+| `refine`   | ✗ | `flow`                                         | v0.1.0 |
+| `weave`    | ✗ | `flow`                                         | v0.1.0 |
+| `use`      | ✗ | `flow`, cabecera de `step`                     | v0.1.0 |
+
+## E/S cognitiva
+
+| Surface | Top-level | Lives inside | Since |
+|---|:---:|---|---|
+| `resource`  | ✓ | — | v1.2.0 |
+| `fabric`    | ✓ | — | v1.2.0 |
+| `manifest`  | ✓ | — | v1.2.0 |
+| `observe`   | ✓ | — | v1.2.0 |
+| `reconcile` | ✓ | — | v1.2.0 |
+| `lease`     | ✓ | — | v1.2.0 |
+| `ensemble`  | ✓ | — | v1.2.0 |
+| `session`   | ✓ | — (referenciada por `socket protocol:`) | v2.3.0 |
+
+## Plano de datos
+
+| Surface | Top-level | Lives inside | Since |
+|---|:---:|---|---|
+| `axonstore` | ✓ | — | v1.31.0 |
+| `dataspace` | ✓ | — | v1.31.0 |
+| `corpus`    | ✓ | — | v1.31.0 |
+| `pix`       | ✓ | — | v1.14.0 |
+| `ledger`    | ✓ | — | v2.12.0 |
+| `type`      | ✓ | — | v0.1.0  |
+
+## Tipos de sesión y transporte
+
+| Surface | Top-level | Lives inside | Since |
+|---|:---:|---|---|
+| `session`        | ✓ | — | v2.3.0 |
+| `socket`         | ✓ | — | v2.3.0 |
+| `axonendpoint`   | ✓ | — | v1.23.0 |
+| `axpoint`        | ✓ | — | v1.23.0 |
+| `daemon`         | ✓ | — | v1.11.0 |
+| `mcp`            | ✓ | — | v1.24.0+ |
+| `listen`         | ✗ | `flow`, cuerpo de `daemon` | v1.11.0 |
+| `channel`        | ✓ | — | v1.6.0 |
+| `emit`           | ✗ | `flow`, cuerpo de `daemon` | v1.6.0 |
+| `publish`        | ✗ | `flow`, cuerpo de `daemon` | v1.6.0 |
+| `discover`       | ✗ | `flow`, cuerpo de `daemon` | v1.6.0 |
+
+> La palabra `taint` está reservada en el lexer pero hoy no tiene producción en
+> el parser (aparece en el retículo de incertidumbre epistémica de
+> `axon-frontend::epistemic`, no como declaración de nivel superior). Si un ciclo
+> futuro introduce una declaración `taint <Name> { … }`, el registro y esta tabla
+> crecen a la vez.
+
+## Operadores
+
+| Surface | Top-level | Lives inside | Since |
+|---|:---:|---|---|
+| `shield`   | ✓ | — | v1.13.1 |
+| `mandate`  | ✓ | — | v1.13.1 |
+| `compute`  | ✓ | — | v1.12.0 |
+| `lambda`   | ✓ | — | v1.10.0 |
+| `forge`    | ✗ | `flow` | v1.12.0 |
+| `ots`      | ✓ | — | v1.4.0 |
+| `psyche`   | ✓ | — | v1.5.2 |
+| `agent`    | ✓ | — | v1.12.0 |
+
+> La palabra `logic` está reservada en el lexer pero —igual que `taint`
+> (v1.2.0)— hoy no tiene producción en el parser. Si un ciclo futuro introduce
+> una declaración `logic <Name> { … }`, el registro y esta tabla crecen a la
+> vez.
+
+## Sentencias (no son primitivas, pero se parsean en el cuerpo de un flow)
+
+Son sentencias que un agente trata como el cuerpo de un `flow`. NUNCA van en el
+nivel superior.
+
+| Superficie | Vive dentro de | Qué hace |
+|---|---|---|
+| `if … else`   | cuerpo de `flow` | Rama condicional |
+| `for x in …`  | cuerpo de `flow` | Iteración acotada |
+| `let x = …`   | cuerpo de `flow` | Enlace local |
+| `return …`    | cuerpo de `flow` | Retorno anticipado o explícito |
+| `break`       | dentro de `for` | Salida anticipada del bucle |
+| `continue`    | dentro de `for` | Siguiente iteración |
+| `run …`       | nivel superior — pero es un *enlace*, no una declaración | Enlaza un flow con persona + context + anchors |
+| `apply`       | campo del cuerpo de `step` | Invocar a otro flow |
+
+## Disciplina de composición
+
+- **Los flows componen con `apply`, no anidándose.** Una declaración `flow` no
+  puede aparecer dentro de otro `flow`. Los subflows se *referencian* desde el
+  cuerpo de un `step` con `apply: <FlowName>`.
+- **Los anchors y los shields se enlazan por `run`, no por la cabecera del
+  flow.** Un flow no enumera sus restricciones; lo hace la sentencia `run` que lo
+  ejecuta, mediante `constrained_by [...]`.
+- **Las personas, los contexts y los tools se referencian, no se vuelven a
+  declarar.** Un flow que usa una persona la referencia (`as <Persona>` en el
+  `run`, o `use <Persona>` en cada step). No incrusta una declaración nueva.
+
+Para el *porqué* de estas reglas, lee `axon://logic/flow_composition`.

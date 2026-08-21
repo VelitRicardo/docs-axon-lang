@@ -1,0 +1,163 @@
+---
+title: "Composición y reglas de anidamiento"
+description: "Cómo componen las construcciones de AXON — qué puede anidarse dentro de qué, cómo se resuelven las referencias entre construcciones y por qué el lenguaje es plano a propósito en el nivel superior."
+---
+
+AXON es **plano a propósito en el nivel superior**. Un programa es una
+secuencia de declaraciones (`persona`, `flow`, `anchor`, `tool`, `type`,
+`axonendpoint`, `socket`, `session`, `axonstore`, …) y exactamente un enlace
+`run` opcional (cero o más en algunos modos de adopción). Todo lo demás es
+composición por *referencia*, no por anidamiento.
+
+Esta página es el razonamiento detrás de ese diseño. Para la tabla en crudo de
+"qué puede ir dónde", consulta `axon://grammar/top_level`.
+
+## Los cuatro operadores de composición
+
+AXON tiene cuatro formas de componer declaraciones. Son deliberadamente pocas
+para que un agente pueda elegir la correcta sin ponerse a buscar.
+
+### 1. **Referencia por nombre** — la opción por defecto
+
+La mayor parte de la composición ocurre por referencias a identificadores desnudos.
+
+```text
+persona LegalExpert { … }
+anchor NoHallucination { … }
+flow AnalyzeContract(doc: Document) -> ContractAnalysis { … }
+
+run AnalyzeContract(myContract)
+    as LegalExpert                  # reference, not nesting
+    constrained_by [NoHallucination] # reference, not nesting
+```
+
+El compilador resuelve `LegalExpert` y `NoHallucination` contra la tabla de
+símbolos del módulo en tiempo de parseo. No hay matices de ámbito: las
+declaraciones son visibles en todo el módulo donde aparecen.
+
+### 2. **`apply` — composición de flow a flow**
+
+Cuando el step de un flow necesita invocar a otro flow, lo hace por el campo
+`apply:` del step. Es la *única* forma en que los flows componen.
+
+```text
+flow EnrichWithLegalContext(entities: EntityMap) -> EnrichedEntityMap { … }
+
+flow AnalyzeContract(doc: Document) -> ContractAnalysis {
+    step Extract {
+        given: doc
+        ask: "Extract parties, obligations, dates"
+        output: EntityMap
+    }
+    step Enrich {
+        given: Extract.output
+        apply: EnrichWithLegalContext  # ← composition, not nesting
+        output: EnrichedEntityMap
+    }
+}
+```
+
+**No existe gramática de flow anónimo ni en línea.** Un subflow tiene que ser
+un `flow` declarado en el nivel superior. Eso mantiene limpio el rastro de
+auditoría: todo flow tiene nombre, firma e identidad en el despliegue.
+
+### 3. **Enlace de portador — del transporte a la cognición**
+
+La capa de tipos de sesión compone enlazando una declaración de transporte de
+nivel superior con una declaración de protocolo de nivel superior.
+
+```text
+session Chat { client: [...], server: [...] }
+
+socket ChatWS {
+    protocol: Chat              # ← reference to the session
+    backpressure: credit(8)
+}
+```
+
+El `socket` no *contiene* la `session`; se enlaza a ella. Igualmente:
+
+```text
+axonendpoint AnalyzeContractAPI {
+    flow: AnalyzeContract       # ← reference to the flow
+    method: POST
+    route: "/v1/contracts/analyze"
+}
+```
+
+### 4. **Anidamiento — solo donde la gramática lo exige**
+
+Un puñado de construcciones están anidadas sintácticamente porque no tienen
+identidad con sentido fuera de su contenedor:
+
+| Construcción anidada | Contenedor | Por qué anidada |
+|---|---|---|
+| `step` | `flow` | Un step es una *operación* — su identidad es su posición dentro del cuerpo del flow. |
+| `reason`, `probe`, `weave`, `refine`, `validate` | `flow` (hermanos de `step`) | El mismo razonamiento: son operaciones, no declaraciones. |
+| `use`, `given`, `ask`, `output`, `apply`, `confidence_floor`, `navigate` | cuerpo de `step` | Campos internos del step. |
+| `listen` | cuerpo de `flow` o `daemon` | Un listener es un *comportamiento*, no un sujeto de nivel superior. |
+| `if`, `for`, `let`, `return`, `break`, `continue` | cuerpo de `flow` | Control de flujo y enlaces. |
+
+Para todo lo demás, la respuesta es **declararlo en el nivel superior y
+referenciarlo por su nombre**.
+
+## La regla de "nada de declaraciones anónimas"
+
+AXON no tiene:
+
+- Personas anónimas (`as { tone: precise, ... }`)
+- Anchors en línea (`constrained_by [{ require: source_citation }]`)
+- Flows en línea (`step Run { apply: { step Sub { ... } } }`)
+- Tools, sessions o sockets en línea, …
+
+Toda declaración tiene nombre. La contrapartida es intencionada:
+
+- **Rastro de auditoría** — todo token emitido se puede rastrear hasta una
+  declaración con nombre, no hasta una anónima en línea cuyo significado dependa
+  del contexto que la rodea.
+- **Reutilización** — una sola persona `LegalExpert` puede referenciarse desde
+  una docena de `run`s; una persona en línea es texto repetido.
+- **Revisabilidad del diff** — las declaraciones están en el nivel superior, así
+  que una revisión de código ve cada persona, anchor o flow como una unidad
+  discreta.
+
+Cuando alguien quiere declaraciones de usar y tirar, el idioma es declararlas
+localmente dentro del módulo que las usa — siguen teniendo nombre y siguen en el
+nivel superior, simplemente no se exportan.
+
+## Referencias entre módulos
+
+Los módulos importan declaraciones con nombre de otros módulos mediante la
+sentencia `import`:
+
+```text
+import legal_personas { LegalExpert, MedicalEthicist }
+import shared_anchors { NoHallucination, NoPHI }
+```
+
+El compilador trata los nombres importados como si estuvieran declarados en la
+tabla de símbolos del módulo local. Las reglas de composición no cambian al
+cruzar la frontera de un módulo.
+
+## Qué comprueba el compilador de verdad
+
+En tiempo de parseo:
+
+1. Toda referencia (`as <X>`, `constrained_by [<Y>]`, `apply: <Z>`,
+   `protocol: <P>`, …) se resuelve contra la tabla de símbolos del módulo.
+2. Las referencias desconocidas emiten un diagnóstico estructurado
+   `unknown_<kind>: <name>` en el punto de la referencia.
+3. Las referencias cíclicas —un `flow A` cuya cadena de `apply:` vuelve a `A`—
+   se aceptan *estructuralmente* (porque el ciclo solo puede darse en ejecución,
+   no en el parseo), pero el linter las señala al correr `axon check --strict`.
+
+En tiempo de verificación de tipos:
+
+4. Se comprueba la *firma* de cada referencia: un `step` cuyo `apply: <Sub>`
+   invoca a un subflow debe tener un `given:` compatible con el tipo del
+   parámetro del subflow y un `output:` compatible con su tipo de retorno.
+
+Este es el modelo de composición completo. No hay nada más que aprender —
+cuando un agente duda sobre cómo combinar dos primitivas, la respuesta es o bien
+"decláralo en el nivel superior y referéncialo" o bien "mira los cuatro
+operadores de arriba".
