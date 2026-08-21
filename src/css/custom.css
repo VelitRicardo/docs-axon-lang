@@ -1,0 +1,12 @@
+/**
+ * Entry único de estilos (plan §6.1).
+ *
+ * F1 deja el archivo deliberadamente vacío de decisiones: el sistema de tokens
+ * entra en F2 como `tokens.css`, `base.css` y `docusaurus.css`, y este archivo
+ * pasa a ser solo la cadena de @import.
+ *
+ * Regla que empieza a regir desde ya: ningún literal de color, sombra, radio ni
+ * duración fuera de `tokens.css`. Lo que se cuele aquí, lo caza el lint de F6.
+ */
+
+@layer tokens, base, ifm, components, utilities;
