@@ -1,0 +1,156 @@
+---
+title: "Despacho de herramienta frente a delegación cognitiva — `use <Tool>(k=v)` frente a `apply: <Tool>`"
+description: "La ley que separa una LLAMADA a herramienta determinista y tipada (`use <Tool>(k=v)`) de la DELEGACIÓN COGNITIVA de una herramienta al modelo (`apply: <Tool>`). Son dos operaciones epistémicas distintas, no una función con dos sintaxis. Elige según…"
+---
+
+AXON te da **dos formas distintas** de meter un `tool` en un flow. **No** son
+intercambiables, y **no** son "lo mismo, una determinista y otra rota". Son dos
+*operaciones epistémicas* diferentes. Elegir la equivocada es el error de
+migración más común — así que esta página es la ley.
+
+## Las dos operaciones
+
+### 1. `use <Tool>(k = v, …)` — despacho determinista de herramienta
+
+Una sentencia a **nivel de flow**. El programa afirma la llamada: el compilador
+valida los argumentos con nombre contra el esquema `parameters:` de la herramienta
+(culpa de quien llama, *antes* de cualquier despacho), el runtime ensambla un
+cuerpo JSON tipado y lo ejecuta **directamente** contra el servidor de la
+herramienta — **el LLM no participa en ningún momento**. Determinista, predecible,
+auditado.
+
+```text
+tool CrmRadar {
+  provider: http                                       # ← see "the provider contract" below
+  parameters: { company: String, max_results: Int, active: Bool }
+  output_type: CrmReport
+}
+flow ScanCrm(company: String) -> CrmReport {
+  use CrmRadar(company = company, max_results = 5, active = true)   # ← direct dispatch, no LLM
+  step Summarize { ask: "Summarise ${CrmRadar_result}" output: CrmReport }
+  return Summarize.output
+}
+```
+
+#### Formas del valor de un argumento (qué puede ser `v`)
+
+En `use <Tool>(k = v)`, el valor `v` se resuelve en ejecución según su clase:
+
+- **Literal** — una cadena entrecomillada (`"hello"`), un número (`10`), un
+  booleano (`true`), una lista. Se coacciona al tipo JSON declarado del parámetro.
+  Una cadena entrecomillada interpola `${param}` / `${StepName}` dentro de sí.
+- **Referencia** — un identificador desnudo o la salida de un step con punto,
+  resuelto contra los enlaces vivos (como un `let`):
+  - un **parámetro del flow** — `company` → el valor `company` de la petición;
+  - la **salida de un step anterior** — `ExtractUrl.output` (o el nombre desnudo
+    del step, `ExtractUrl`) → el resultado de ese step. Este es el patrón de
+    **extraer → despachar** para herramientas de varios argumentos: cada argumento
+    viene de su propio paso de extracción.
+
+```text
+flow Pulse(brief: String) -> Report {
+  step ExtractUrl     { ask: "extract the URL from ${brief}"     output: String }
+  step ExtractCompany { ask: "extract the company from ${brief}" output: String }
+  use GeneratePulse(
+    url          = ExtractUrl.output,       # reference → the step's output
+    company_name = ExtractCompany.output,   # a distinct derived value per arg
+    source       = brief                    # reference → a flow parameter
+  )
+  step Summarize { ask: "summarise ${GeneratePulse_result}" output: Report }
+  return Summarize.output
+}
+```
+
+El verificador de tipos valida el **tipo de origen** de una referencia contra el
+tipo declarado del parámetro (culpa de quien llama, en compilación) — un
+`url = ExtractCount.output` donde el step devuelve un `Int` y el parámetro es un
+`String` es un error de compilación, no un desajuste en ejecución.
+
+### 2. `apply: <Tool>` — delegación cognitiva
+
+Un **backend de step**. El step corre como una **llamada de razonamiento al LLM**
+con la herramienta puesta *a disposición* del modelo. El modelo decide, de forma
+**estocástica**, si la invoca y cómo. Esto es cognición genuina —racionalidad
+acotada bajo incertidumbre—, no una llamada determinista.
+
+```text
+flow Investigate(brief: Brief) -> Finding {
+  step Research use Analyst {
+    given: brief
+    apply: WebScout          # the model reasons and MAY call WebScout
+    ask: "Investigate the brief and synthesise a finding"
+    output: Finding
+  }
+}
+```
+
+## Por qué son diferentes (los cuatro pilares)
+
+| | `use <Tool>(k=v)` | `apply: <Tool>` |
+|---|---|---|
+| **Matemática** | una invocación de efecto tipada — un morfismo con firma validada | un kernel estocástico (el LLM), con su salida acotada por el techo del retículo epistémico |
+| **Lógica** | CT-2: una llamada malformada es un error *demostrable* de quien llama, en compilación | no puedes *demostrar* que llama — invocar es una decisión, no una deducción |
+| **Filosofía** | la afirmación del programa (apodíctica sobre la llamada; el resultado decae según el teorema 5.1) | juicio delegado bajo incertidumbre — la estocasticidad es honesta y aflora (el sobre epistémico) |
+| **Computación** | despacho directo al servidor de la herramienta | el modelo como un runtime que *puede* emitir una llamada a herramienta |
+
+En términos de sistema operativo: `use` es una **llamada al sistema** (el programa
+invoca el servicio, de forma determinista); `apply:` es **delegar cognición** (le
+das a un proceso de razonamiento una capacidad y dejas que decida). Las dos son de
+primera clase.
+
+> **AXON no finge que el LLM sea determinista.** Contiene la estocasticidad del
+> modelo y la *hace aflorar* (el retículo, el sobre epistémico). Eliges `use`
+> cuando necesitas determinismo, y `apply:` cuando de verdad quieres que el modelo
+> razone con una herramienta disponible. No escribas `apply:` esperando una
+> llamada determinista — eso es pedirle al LLM que sea determinista, que
+> contradice lo que `apply:` *es*.
+
+## El contrato del proveedor (obligatorio para un despacho real)
+
+`use <Tool>(k=v)` despacha directamente **solo** para herramientas cuyo
+`provider:` maneja el registro de herramientas del runtime: **`http`** y **`mcp`**
+(más los integrados `native`/`stub` para pruebas). Una herramienta declarada con
+un slug nativo del modelo —`tavily`, `brave`, `openai`, …— **no** se despacha
+directamente: se descuelga hacia la propia superficie de uso de herramientas del
+LLM, *incluso con `use(k=v)`*. Así que una llamada determinista son **dos**
+decisiones:
+
+1. **Forma:** `use <Tool>(k = v, …)` (a nivel de flow), no `apply:`.
+2. **Proveedor:** `provider: http` (o `mcp`) más un endpoint cableado (una URL
+   absoluta en `runtime:`, o un slug relativo resuelto contra la URL base de
+   herramientas del servidor o del inquilino).
+
+## El compilador señala el camino (`axon-W004`)
+
+Como la distinción es fácil de pasar por alto, el verificador de tipos hace de
+guía honesto: cuando escribes `apply: <Tool>` sobre una herramienta que declara un
+esquema `parameters:`, `axon check` emite **`axon-W004`** — nombra su naturaleza
+cognitiva y te redirige a la forma determinista `use <Tool>(k = v, …)` (listando
+los parámetros del esquema). El compilador **nunca convierte `apply:` en
+determinista en silencio**; te dice qué operación escribiste y cuál consigue
+determinismo.
+
+## Migrar una habilidad que debería ser determinista
+
+```text
+# ❌ Cognitive delegation — runs as an LLM step; the model decides
+flow Scan(req: LeadRequest) -> CrmReport {
+  step Render { given: req apply: CrmRadar ask: "scan" output: CrmReport }
+  return Render.output
+}
+
+# ✅ Deterministic dispatch — direct, schema-validated, no LLM
+flow Scan(company: String) -> CrmReport {
+  use CrmRadar(company = company, max_results = 5, active = true)
+  step Summarize { ask: "Summarise ${CrmRadar_result}" output: CrmReport }
+  return Summarize.output
+}
+```
+
+## Véase también
+
+- `axon://primitives/tool` — la declaración `tool` (`parameters:`, `output_type:`,
+  proveedores, cableado del endpoint).
+- `axon://primitives/step` — `apply:` como backend de step.
+- `axon://logic/flow_composition` — `apply: <Flow>` (composición), el *otro*
+  significado de `apply:`.

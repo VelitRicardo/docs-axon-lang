@@ -65,6 +65,18 @@ Y los de confianza: `Untrusted` · `Scanned` · `Sanitized` · `Trusted`.
 slug del archivo y la URL siguen en inglés, así que ningún enlace se rompe, y el
 lector español puede leer la tesis.
 
+## Código: qué se toca y qué no
+
+La distinción que importa, y que verifica `scripts/check-code-blocks.py`:
+
+- **Artefactos normativos: idénticos byte a byte.** Comandos, declaraciones,
+  EBNF, tipos de sesión, JSON de ejemplo, diagnósticos. Traducir una gramática
+  formal no es traducir: es introducir un error.
+- **Comentarios dentro de ejemplos ilustrativos: se traducen.** Un
+  `# verificación de cumplimiento en compilación` al lado de un comando ayuda al
+  lector y no altera nada ejecutable. El comando de esa misma línea sigue siendo
+  idéntico.
+
 ## Diagnósticos y errores
 
 El texto literal de un error del compilador **se deja en inglés**, dentro de su

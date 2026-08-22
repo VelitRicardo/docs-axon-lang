@@ -1,0 +1,200 @@
+---
+title: "Dualidad de sesión — las reglas algebraicas de la v2.3.0"
+description: "Reglas de dualidad de Caires-Pfenning y Honda-Yoshida para las sesiones de AXON. Igualdad regular-coinductiva, contrapresión refinada por créditos, proyección multiparte — las reglas que el verificador de tipos de la v2.3.0 descarga de verdad."
+---
+
+Un `socket` enlaza una declaración `session` de nivel superior con un portador
+WebSocket (RFC 6455). El compilador no se limita a comprobar que existen dos
+extremos; verifica —en tiempo de parseo y de verificación de tipos— que los dos
+roles de la sesión enlazada son **duales algebraicos** bajo el cálculo de tipos de
+sesión de Caires-Pfenning.
+
+Esta página es la referencia de las reglas. La implementación vive en
+[`axon-frontend/src/session.rs`](https://github.com/VelitRicardo/axon-lang/blob/master/axon-frontend/src/session.rs)
+y en
+[`axon-frontend/src/multiparty.rs`](https://github.com/VelitRicardo/axon-lang/blob/master/axon-frontend/src/multiparty.rs);
+la matemática está en
+[`papers/paper_websocket_cognitive_primitive.md`](https://github.com/VelitRicardo/axon-lang/blob/master/papers/paper_websocket_cognitive_primitive.md).
+
+## El álgebra de cuatro pilares de la v2.3.0
+
+El sistema de la v2.3.0 se apoya en cuatro pilares. El compilador impone cada uno;
+cada uno emite diagnósticos estructurados si se viola.
+
+### Pilar 1 — Dualidad (v2.3.0)
+
+Para toda `session S { client: C, server: S }`, la ley de conexión es:
+
+```
+S ≡ C⊥
+```
+
+donde `⊥` es el operador dual:
+
+| Acción | Dual |
+|---|---|
+| `send T`            | `receive T`     |
+| `receive T`         | `send T`        |
+| `select { a:S₁ }`   | `branch { a:S₁⊥ }` |
+| `branch { a:S₁ }`   | `select { a:S₁⊥ }` |
+| `loop, X`           | `loop, X`       |
+| `end`               | `end`           |
+| `μX.S`              | `μX.S⊥`         |
+| `X`                 | `X`             |
+
+**Igualdad regular-coinductiva.** Dos tipos de sesión son iguales si coinciden sus
+*despliegues como árbol regular*. Esto significa que `μX.send T, X` y
+`μY.send T, Y` son iguales (se aceptan las variables de recursión α-equivalentes).
+
+El compilador calcula las formas normales duales de ambos lados y comprueba la
+igualdad sintáctica sobre el árbol canónico.
+
+Diagnóstico de violación: `Session 'X' duality violation: …`.
+
+### Pilar 2 — Linealidad (v2.3.0)
+
+Un contexto de tipado `Δ` es **lineal**: cada canal `x: S ∈ Δ` se usa exactamente
+una vez a lo largo de cada camino. Las reglas de ramificación `select` y `branch`
+recuperan el contexto en cada rama:
+
+```
+Δ ⊢ x: select { lᵢ:Sᵢ }
+———————————————————————
+Δ, x: Sᵢ ⊢ branch_arm_i
+```
+
+La linealidad evita el reparto accidental de canales con tipo de sesión (solo los
+portadores `socket` pueden multiplexar; los valores con tipo `session` tienen un
+único propietario).
+
+### Pilar 3 — Contrapresión refinada por créditos (v2.3.0)
+
+Cuando un `socket` declara `backpressure: credit(n)`, cada `send` del tipo de
+sesión lleva un **índice de crédito**: `!ⁿT.S` (sección 4.2 del paper). Las
+condiciones de buena formación son decidibles en **aritmética de Presburger**:
+
+| Veredicto | Condición | Diagnóstico |
+|---|---|---|
+| `SendAtZero` | el tipo contiene `!⁰T.S` | "send `T` at credit n=0 has no typing rule" |
+| `BurstOverflow` | una ráfaga de envíos en línea recta > n | "the protocol requires a send-burst of N but `credit(n)` cannot absorb it" |
+| `LoopUnsustainable` | el cuerpo recursivo tiene Δ = #send − #recv > 0 | "recursive body is unsustainable: Δ = … > 0" |
+
+`n` debe ser `≥ 1`. Una ventana de crédito cero no tiene regla de tipado para
+ningún envío.
+
+### Pilar 4 — Proyección multiparte (v2.3.0)
+
+Para protocolos de varios roles (3 o más participantes, por ejemplo cliente /
+servidor / auditor), la regla de proyección de Honda-Yoshida-Carbone de la v2.3.0
+*proyecta* un tipo global sobre el tipo local de cada rol y comprueba después la
+**realizabilidad segura**: cada par proyectado es dual.
+
+```
+G = msg(client → server, Request);
+    msg(server → auditor, AuditEntry);
+    msg(server → client, Response);
+    end
+```
+
+proyecta a:
+
+```
+G ↾ client  = send Request, receive Response, end
+G ↾ server  = receive Request, send AuditEntry, send Response, end
+G ↾ auditor = receive AuditEntry, end
+```
+
+El compilador verifica que se cumple cada dual por pares. La **regla de no
+participación** (un rol que el cuerpo nunca menciona proyecta a `end`) está
+integrada en el proyector para evitar diagnósticos espurios.
+
+Implementación: `axon-frontend::multiparty::project_all`.
+
+## El gancho de estado cognitivo
+
+Un `socket` declarado con `reconnect: cognitive_state` sella el **cursor residual
+del tipo de sesión** junto con la ventana de crédito viva en una instantánea
+ligada por AAD al desconectar. El protocolo de reanudación descifra el residual y
+restaura los pilares 1 y 3 exactamente en el mismo punto.
+
+No es un álgebra aparte; son las mismas reglas de la v2.3.0 aplicadas al residual.
+El ligado por AAD (sección 5.3 del paper) impide que un cliente reanude la sesión
+de otro.
+
+## Recetas prácticas para un agente
+
+### A. Escribir una sesión con dualidad correcta
+
+Al declarar una sesión, escribe el rol **cliente** de principio a fin y luego
+dualízalo mecánicamente para obtener el rol **servidor**. El compilador cazará
+cualquier desviación:
+
+```axon
+session Chat {
+    client: [
+        loop,
+        select {
+            ask:    [send Utterance, branch {
+                        token: [receive Token, loop],
+                        done:  [end]
+                    }],
+            cancel: [end]
+        }
+    ]
+    server: [
+        loop,
+        branch {
+            ask:    [receive Utterance, select {
+                        token: [send Token, loop],
+                        done:  [end]
+                    }],
+            cancel: [end]
+        }
+    ]
+}
+```
+
+Cada `send` ↔ `receive`, cada `select` ↔ `branch`, cada etiqueta aparece en ambas
+ramas.
+
+### B. Elegir una ventana de crédito
+
+La disciplina de la v2.3.0:
+
+- **n = 1** — diálogo por turnos (chat). El productor envía una intervención y
+  espera el acuse o la respuesta.
+- **n = 4–8** — streaming conversacional típico, al estilo SSE. Absorbe ráfagas
+  pero se mantiene acotado.
+- **n ≥ 16** — patrones de transferencia masiva o de encauzado. Verifica con el
+  comprobador de Presburger que la Δ del cuerpo recursivo sea ≤ 0.
+
+El compilador rechaza `credit(0)` y cualquier ráfaga de envíos que exceda `n`.
+
+### C. Multiparte: cliente / servidor / auditor
+
+La regla de proyección de la v2.3.0 aparece cuando declaras una sesión con 3 o más
+roles. El agente no declara las proyecciones a mano — el compilador proyecta y
+comprueba la realizabilidad segura automáticamente. La superficie de error le dice
+al agente qué proyección de qué rol falló:
+
+```
+multiparty_projection_failed: at role 'auditor' — the projected
+type expects `receive Decision` but the global type does not emit
+one to this role.
+```
+
+## Qué NO está en este álgebra
+
+- **Subtipado.** Los tipos de sesión de AXON no tienen subtipado (no hay regla
+  `S ≤ T`). Dos sesiones son o iguales módulo α o distintas.
+- **Paso de sesiones de orden superior.** `send T.S` donde T es a su vez un tipo
+  de sesión **no** está soportado en la v2.x. Es una extensión conocida en
+  investigación; los canales tipados móviles de la v1.6.0 cubren los casos de uso
+  prácticos por otro mecanismo.
+- **Dualidad síncrona entre varios sockets.** Cada `socket` es su propia frontera
+  de dualidad. Para que un baile entre varios sockets sea seguro por tipos, declara
+  una única sesión multiparte y proyecta — no apiles sockets.
+
+Para las demostraciones, mira el paper. Para la implementación, el código
+enlazado. Para la *intención* —escribir protocolos que no se bloqueen—, aplica los
+cuatro pilares de arriba.

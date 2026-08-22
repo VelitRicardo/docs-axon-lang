@@ -1,0 +1,187 @@
+---
+title: "Composición de flows — cuándo anidar y cuándo declarar en el nivel superior"
+description: "Reglas de decisión sobre cuándo una operación debe ir en línea como un step, elevarse a un subflow invocado con `apply`, o separarse del todo en una declaración de nivel superior."
+---
+
+Cuando un agente escribe AXON se enfrenta constantemente a una elección: *¿esto
+debería ser otro `step` del flow actual, o un subflow al que hago `apply`?* Esta
+página es la regla de decisión.
+
+## Las dos composiciones
+
+AXON tiene exactamente dos formas de componer trabajo dentro de la capa cognitiva:
+
+1. **En línea, como un step.** La operación ocurre dentro del cuerpo del flow
+   actual, con su `given:` viniendo de la salida del step anterior y su `output:`
+   alimentando al siguiente.
+2. **Elevar a subflow y `apply`.** La operación se declara como un `flow` de nivel
+   superior y se invoca desde un step con `apply: <FlowName>`.
+
+**No hay un tercer camino.** Los subflows anónimos no existen, y las
+declaraciones `step` no van en el nivel superior. Se elige entre esas dos.
+
+## La regla de decisión
+
+Eleva a subflow cuando se cumpla **cualquiera** de estas. En caso contrario, déjalo
+en línea como un step.
+
+### 1. La operación se reutiliza
+
+Si la misma operación lógica aparece en dos flows, **elévala**. El coste de
+declarar un subflow es una palabra clave (`flow`); el beneficio es una
+implementación canónica, una fila de rastro de auditoría por invocación y un solo
+sitio donde arreglar los errores.
+
+```text
+# Reused — lift.
+flow ExtractEntities(doc: Document) -> EntityMap { … }
+
+flow AnalyzeContract(doc: Document) -> ContractAnalysis {
+    step Extract { apply: ExtractEntities  given: doc  output: EntityMap }
+    …
+}
+
+flow SummarizeBrief(doc: Document) -> BriefSummary {
+    step Extract { apply: ExtractEntities  given: doc  output: EntityMap }
+    …
+}
+```
+
+### 2. La operación necesita su propio enlace de anchor o persona
+
+Los anchors y las personas se enlazan en el punto del `run`, y su ámbito es el
+**flow**. Si una operación necesita `LegalExpert` y un anchor más severo que el
+flow que la rodea, esa operación es un flow propio.
+
+```text
+# The contract-clause review needs a stricter persona — lift it.
+flow ReviewLiabilityClause(clause: Clause) -> RiskScore { … }
+run  ReviewLiabilityClause(c)
+     as SeniorLegalCounsel
+     constrained_by [NoLegalAdvice, EvidenceBacked, ZeroHallucination]
+```
+
+### 3. La operación tiene una interfaz tipada limpia
+
+Si la entrada y la salida de la operación tienen tipos bien definidos
+(`given: Document → output: EntityMap`), elévala. El verificador de tipos impondrá
+la compatibilidad de firmas en el punto de llamada, y el subflow pasa a ser
+comprobable de forma independiente con `axon check` y `harness`.
+
+### 4. La operación tiene más de unos 5 steps
+
+Un cuerpo de flow con 10 o más steps es ilegible — y no se puede revisar. Eleva
+grupos de steps relacionados a subflows que nombren *lo que hacen*. El flow externo
+se lee entonces como un índice.
+
+```text
+# Outer flow reads as the high-level narrative.
+flow EndToEndContractReview(doc: Document) -> Report {
+    step Ingest        { apply: NormalizeContract        given: doc  output: NormalisedDoc }
+    step Extract       { apply: ExtractEntities           given: Ingest.output  output: EntityMap }
+    step Risk          { apply: AssessRisks               given: Extract.output  output: RiskAnalysis }
+    step Mitigation    { apply: ProposeMitigations        given: Risk.output  output: MitigationPlan }
+    step ReportRender  { apply: RenderReport              given: Mitigation.output  output: Report }
+}
+```
+
+### 5. La operación tiene que exponerse por el cable
+
+Si la operación va a invocarse desde fuera del programa —por una ruta HTTP de
+`axonendpoint`, por un `socket`, por otro agente a través de MCP—, tiene que ser un
+flow de nivel superior. Las primitivas de transporte se enlazan a flows, no a
+steps.
+
+```text
+axonendpoint ExtractEntitiesAPI {
+    flow: ExtractEntities          # must be a top-level flow
+    method: POST
+    route: "/v1/extract"
+}
+```
+
+## Cuándo NO elevar
+
+Déjalo en línea como un step cuando se cumplan **todas** estas:
+
+- La operación aparece exactamente una vez.
+- Corre bajo la misma persona y los mismos anchors que el flow que la rodea.
+- Es conceptualmente un *micropaso*: un prompt, una salida tipada, sin control de
+  flujo interno.
+- No necesita probarse de forma aislada.
+- No se expone por el cable.
+
+La mayoría de las operaciones hoja cumplen ese listón. La mayoría de los `flow`
+tienen entre 3 y 8 steps en línea y como mucho uno o dos `apply` a subflows.
+
+## Antipatrones
+
+### Antipatrón A — elevar de más
+
+```text
+# Don't.
+flow EmitGreeting(g: Greeting) -> Greeting { step Emit { given: g  output: Greeting } }
+
+flow GreetUser(name: String) -> Greeting {
+    step Compose { … }
+    step Emit    { apply: EmitGreeting  given: Compose.output  output: Greeting }
+}
+```
+
+`EmitGreeting` es un solo step en línea. Elevarlo no gana nada y añade una fila de
+auditoría de más.
+
+### Antipatrón B — elevar de menos
+
+```text
+# Don't.
+flow EndToEndContractReview(doc: Document) -> Report {
+    step S1  { … }
+    step S2  { … }
+    step S3  { … }
+    step S4  { … }
+    step S5  { … }
+    step S6  { … }
+    step S7  { … }
+    step S8  { … }
+    step S9  { … }
+    step S10 { … }
+    step S11 { … }
+    step S12 { … }
+}
+```
+
+12 steps en línea sin ninguna agrupación lógica no se puede revisar. Eleva los
+grupos relacionados a subflows con nombre.
+
+### Antipatrón C — cadena de apply disfrazada de composición
+
+```text
+# Don't.
+flow A(x: T) -> T { step Pass { apply: B  given: x  output: T } }
+flow B(x: T) -> T { step Pass { apply: C  given: x  output: T } }
+flow C(x: T) -> T { step Pass { apply: D  given: x  output: T } }
+flow D(x: T) -> T { step Pass { apply: E  given: x  output: T } }
+flow E(x: T) -> T { step Work { given: x  ask: "…"  output: T } }
+```
+
+Cada "flow" hace un solo trasiego. Colapsa todo a un único flow con un step con
+sentido.
+
+## Metarreglas de composición
+
+- **Los subflows componen linealmente**, no como un DAG. Dentro del cuerpo de un
+  `step` se permite exactamente un `apply:`. Para componer varios subflows,
+  secúncialos como varios `step` del flow externo.
+- **Los ciclos compilan, pero se señalan.** `axon check --strict` rechaza toda
+  cadena de `apply:` cuya clausura transitiva vuelva a quien llama (recursión mutua
+  entre flows). Disciplina de producción: reescribirlo como iteración con `for` y
+  una condición de parada.
+- **Los subflows NO heredan la pila de anchors de quien llama.** Los anchors del
+  nivel `run` solo se aplican al flow *superior*. Un subflow que necesite sus
+  propios anchors debe invocarse a través de su propio `run` (raro en código bien
+  factorizado; normalmente los anchors del flow superior bastan).
+
+Para la gramática estructural —qué puede anidarse dentro de qué—, lee
+`axon://grammar/top_level` y `axon://grammar/composition`. Esta página trata de
+*cuándo* componer; aquellas tratan de *cómo*.

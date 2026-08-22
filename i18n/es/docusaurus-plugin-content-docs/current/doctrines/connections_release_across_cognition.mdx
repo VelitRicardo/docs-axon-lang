@@ -1,0 +1,67 @@
+---
+title: "Las conexiones se sueltan durante la cognición — una conexión de pool nunca se retiene ociosa durante…"
+description: "La ley de tiempo de vida de recursos detrás de `AXON_DB_POOLER_MODE` (v2.51.0): una conexión Postgres de pool es un recurso escaso y coherente, y un flow no debe mantenerla retirada durante un paso de COGNICIÓN (LLM) que no la usa. La conexión de la v1.32.0…"
+---
+
+El fallo canónico: un daemon (o un flow de petición) lee de un almacén, corre un
+paso lento de LLM y escribe de vuelta. Si mantiene una conexión Postgres del pool
+durante todo el flow —el anclaje de la v1.32.0—, esa conexión se queda **retirada
+y ociosa** durante toda la llamada al LLM. Multiplícalo por la concurrencia del
+flow y el pool (pongamos 20 conexiones detrás de un pooler de sesión acotado) se
+agota con conexiones que no hacen nada salvo esperar a un LLM. Una lectura barata
+de metadatos en otro sitio (el `list_class` de un barrido de `rotate`) recibe
+entonces un `pool timed out while waiting for an open connection`.
+
+> **La ley.** Una conexión de base de datos de pool es un recurso escaso y
+> coherente. Un flow la mantiene solo mientras dura una operación de almacén,
+> nunca durante un paso de cognición (LLM) entre dos operaciones. La conexión
+> pertenece al `retrieve`/`persist`/`rotate`, no al `ask` que hay entre ellos.
+
+## Por qué existe el anclaje — y cuándo no debe estar
+
+El **anclaje de conexión** de la v1.32.0 mantiene una conexión por cada axonstore
+`postgresql` durante toda la vida del flow, de modo que cada operación de almacén
+se encamine por el mismo backend físico. Eso es OBLIGATORIO bajo un **pooler en
+modo transacción** (pgBouncer con `pool_mode=transaction`, Supavisor de Supabase
+en `:6543`, Neon, RDS Proxy): retiradas sucesivas caen en sesiones distintas, así
+que una sentencia preparada o un `SET` acuñados en una desaparecen en la
+siguiente — el anclaje las mantiene en una sola sesión por coherencia.
+
+Bajo un **pooler de sesión** (el modo sesión de Supabase en `:5432`) o una
+**conexión directa**, cada conexión del pool ES una sesión estable y coherente. La
+coherencia es automática; el anclaje no aporta nada y lo cuesta todo — mantiene
+una conexión escasa retirada durante la E/S del LLM.
+
+`AXON_DB_POOLER_MODE` hace que el anclaje sea consciente del pooler:
+
+- `transaction` (por defecto, o sin definir) → anclaje ACTIVO. Comportamiento sin
+  cambios; la coherencia que necesita el pooler de transacción.
+- `session` | `direct` → anclaje APAGADO. Las operaciones de almacén adquieren por
+  operación y sueltan entre ellas. La conexión de un flow vuelve al pool en el
+  instante en que termina una operación de almacén — así que un paso lento de LLM
+  (o todo un tramo inactivo de un flow) no retiene nada.
+
+Los datos confirmados siguen siendo visibles globalmente entre retiradas por
+operación (MVCC), y el GUC de inquilino se establece por transacción dentro de
+`begin_tenant_tx` — así que leer-tus-propias-escrituras y RLS siguen siendo
+correctos sin el anclaje. Solo lo necesita la pérdida de estado de sesión entre
+retiradas del pooler de transacción.
+
+## Relación con las demás leyes
+
+- `dispatch_vs_cognition` (v2.9.0) aplicada a un RECURSO: el runtime retiene la
+  conexión para el despacho (la operación de almacén); la cognición (el paso del
+  LLM) no retiene nada. El anclaje, bajo un pooler coherente, difuminaría esa línea
+  — esta ley la restaura.
+- `time_is_an_explicit_input` y la degradación elegante: una enumeración de
+  custodia que no consigue conexión falla cerrada con un testigo y reintenta, en
+  vez de bloquear una plaza del pool — la misma postura de fallo cerrado que
+  `rotation_without_revelation`, afinada para que una contención transitoria no se
+  convierta en una parada permanente.
+
+La prueba honesta: si el paso más lento de un flow es una llamada a un LLM y
+durante ella sigue reteniendo una conexión de base de datos, el tamaño efectivo del
+pool no es su número de conexiones — es su número de conexiones menos cada flow en
+vuelo. Bajo un pooler coherente, AXON suelta la conexión para que el pool se
+dimensione por el trabajo concurrente de BASE DE DATOS, no por la COGNICIÓN
+concurrente.
