@@ -14,35 +14,46 @@
 
 new Crawler({
   appId: 'U78MSO2SV3',
-  apiKey: 'cc1c5da1900cea16712d7348b22d06d1', // la del crawler, NO la de búsqueda ni la admin
 
   indexPrefix: '',
   rateLimit: 8,
   maxDepth: 10,
 
-  // www, no el apex: el apex hace 308 y el crawler acabaría con patrones que
-  // no casan con el host al que llega. Es el fallo que dejó el índice en 0.
-  startUrls: ['https://www.ricardovelit.com/axon-docs/'],
+  // Dos detalles que costaron dos rastreos en cero, los dos por lo mismo:
+  // el crawler acaba en una URL que sus propios patrones no reconocen.
+  //
+  //   1. www, no el apex — el apex hace un 308 hacia www.
+  //   2. SIN barra final — `/axon-docs/` redirige a `/axon-docs`
+  //      (cleanUrls + trailingSlash: false), y `/axon-docs/**` NO casa con
+  //      `/axon-docs`: micromatch exige la barra y algo detrás. La página de
+  //      aterrizaje se descartaba y el descubrimiento moría ahí mismo.
+  startUrls: ['https://www.ricardovelit.com/axon-docs'],
   sitemaps: ['https://www.ricardovelit.com/axon-docs/sitemap.xml'],
 
   // El origen de Vercel sirve el mismo contenido y NO debe indexarse: dos
   // orígenes con el mismo texto parten los enlaces y ensucian el índice.
   exclusionPatterns: ['**/*.vercel.app/**'],
 
-  discoveryPatterns: ['https://www.ricardovelit.com/axon-docs/**'],
+  discoveryPatterns: [
+    'https://www.ricardovelit.com/axon-docs',
+    'https://www.ricardovelit.com/axon-docs/**',
+  ],
   ignoreCanonicalTo: false,
 
   actions: [
     {
       indexName: 'axon-docs',
-      pathsToMatch: ['https://www.ricardovelit.com/axon-docs/**'],
+      pathsToMatch: [
+        'https://www.ricardovelit.com/axon-docs',
+        'https://www.ricardovelit.com/axon-docs/**',
+      ],
       recordExtractor: ({ helpers, url }) => {
         // La faceta de idioma es OBLIGATORIA (plan §9). Sin ella, buscar desde
         // /es/ devuelve resultados en inglés: el fallo clásico de i18n con
         // Algolia, y el más difícil de notar porque el buscador "funciona".
         const language = url.pathname.includes('/axon-docs/es/') ? 'es' : 'en';
 
-        return helpers.docsearch({
+        const records = helpers.docsearch({
           recordProps: {
             lvl0: {
               selectors: '.menu__link--sublist.menu__link--active',
@@ -57,12 +68,14 @@ new Crawler({
             content: 'article p, article li, article td, article pre',
             pageRank: url.pathname.includes('/reference/') ? '1' : '0',
           },
-          // Se añade a CADA registro, no solo a la página: contextualSearch
-          // filtra por este atributo.
-          extraAttributes: { language },
           aggregateContent: true,
           recordVersion: 'v3',
         });
+
+        // `language` se añade mapeando los registros, no con una opción del
+        // helper: `extraAttributes` no existe en su API. Tiene que ir en CADA
+        // registro, porque es por registro por lo que filtra contextualSearch.
+        return records.map((record) => ({ ...record, language }));
       },
     },
   ],

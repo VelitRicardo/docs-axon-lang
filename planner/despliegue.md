@@ -110,26 +110,34 @@ El nombre del índice se resolvió consultando la API, no preguntando: primero
 respondía solo `ALGOLIA_INDEX_AXON`, y tras renombrarlo, solo `axon-docs`.
 Verificado por API en los dos momentos.
 
-### ⚠ El primer rastreo salió en 0 — causa y arreglo (2026-08-22)
+### ⚠ Dos rastreos en cero — causas y arreglo (2026-08-22)
 
-El crawler corrió, no dio ningún error y dejó el índice con **0 entradas**.
+El crawler corrió dos veces, no dio ningún error, y dejó el índice en **0
+entradas** las dos. El segundo tardó **3 segundos**: demasiado poco para 204
+páginas, que es la señal de que murió en la primera petición.
 
-**Causa:** el sitio del autor sirve en `www.ricardovelit.com`; el apex hace un
-308 hacia allí. La configuración usaba el apex en `startUrls`,
-`discoveryPatterns` y `pathsToMatch`, así que el crawler seguía la redirección
-hasta `www` y **sus propios patrones dejaban de casar con el host al que había
-llegado**. Descartaba cada página. Silenciosamente.
+Las dos causas son la misma idea: **el crawler acaba en una URL que sus propios
+patrones no reconocen.**
 
-Y el mismo error estaba en `url` del sitio, así que el `rel=canonical` y las 204
-URLs del sitemap declaraban un host que redirige.
+1. **El apex redirige a `www`.** `startUrls` y los patrones usaban el apex; el
+   crawler seguía el 308 y llegaba a un host que ya no casaba.
 
-**Arreglado en los dos sitios**, verificado en producción: canonical y sitemap
-declaran `www`. **Hay que relanzar el rastreo** con el `algolia-crawler.js`
-actualizado.
+2. **La barra final.** Con `cleanUrls` y `trailingSlash: false`,
+   `/axon-docs/` redirige a `/axon-docs`. Y `/axon-docs/**` **no casa con**
+   `/axon-docs`: micromatch exige la barra y algo detrás. La página de
+   aterrizaje se descartaba y el descubrimiento moría ahí.
 
-**La lección para la próxima:** un crawler que no encuentra nada no falla — dice
-que terminó. La comprobación de `nbHits > 0` del paso 2 no es burocracia; es lo
-único que distingue «rastreó» de «creyó que rastreó».
+**Arreglado:** `startUrls` sin barra, y los patrones cubren la raíz *y* lo que
+cuelga de ella. Corregido también `extraAttributes`, que no existe en la API del
+helper — `language` se añade mapeando los registros.
+
+**Cómo se diagnosticó**, por si vuelve a pasar: `entries` y `updatedAt` del
+índice dicen si el rastreo llegó a correr; `lastBuildTimeS` dice si hizo trabajo
+de verdad; y `curl -w '%{redirect_url}'` sobre la URL de arranque enseña a dónde
+acaba yendo el crawler. Con eso, la causa sale en dos minutos.
+
+**La lección, otra vez:** un crawler que no encuentra nada no falla. Dice que
+terminó.
 
 ### El orden importa, y es al revés de lo que parece
 
