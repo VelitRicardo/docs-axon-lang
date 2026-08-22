@@ -832,8 +832,9 @@ Keywords de trabajo: `axon-lang`, `cognitive runtime`, `cognitive OS`,
   palabras en español**, el 21% del corpus, tal y como se dimensionó. Las 22
   doctrinas traducidas en cuatro bloques agrupados por familia conceptual, para
   que el vocabulario compartido quedara estable por construcción.
-   fija las decisiones; 
-  y  las verifican y entran en el gate de F6.
+  `planner/glosario-es.md` fija las decisiones;
+  `scripts/check-translations.py` y `scripts/check-code-blocks.py` las
+  verifican y entran en el gate de F6.
   Dos correcciones al verificador, ambas por causa raíz y no por excepción:
   los diagnósticos citados literalmente no son inglés residual, y el filtrado
   tiene que hacerse sobre el documento entero porque el código en línea y las
