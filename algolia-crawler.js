@@ -8,13 +8,13 @@
  * Cuándo se activa esto: F7, con el sitio ya en producción bajo su dominio
  * definitivo. Antes no — un crawler no puede indexar lo que no existe, y
  * reindexar tras cambiar de origen obliga a rehacer el índice entero.
- *
+ *'
  * Mientras tanto, el sitio usa índice local (ver docusaurus.config.ts).
  */
 
 new Crawler({
   appId: 'U78MSO2SV3',
-
+  apiKey: 'c575206087042c2fc3d....',
   indexPrefix: '',
   rateLimit: 8,
   maxDepth: 10,
@@ -65,19 +65,25 @@ new Crawler({
         const language = url.pathname.includes('/axon-docs/es/') ? 'es' : 'en';
 
         const records = helpers.docsearch({
+          // Selectores de la plantilla OFICIAL de Algolia para Docusaurus.
+          // Los anteriores eran de la plantilla genérica de DocSearch (lvl0 =
+          // categoría del sidebar, lvl1 = h1) y no extraían nada. Aquí lvl0 es
+          // el titular de la página y los niveles bajan por los h2..h6, que es
+          // como Docusaurus estructura el contenido de verdad.
           recordProps: {
             lvl0: {
-              selectors: '.menu__link--sublist.menu__link--active',
+              selectors: 'header h1',
               defaultValue: 'Documentation',
             },
-            lvl1: 'header h1, article h1',
-            lvl2: 'article h2',
-            lvl3: 'article h3',
-            lvl4: 'article h4',
-            // Los bloques de código se indexan: media doc son ejemplos, y
-            // buscar `axon-T957` o `secret_partition` tiene que encontrarlos.
+            lvl1: 'article h2',
+            lvl2: 'article h3',
+            lvl3: 'article h4',
+            lvl4: 'article h5',
+            lvl5: 'article h6',
+            // Se añaden `td` y `pre` a lo que trae la plantilla: media doc son
+            // tablas y ejemplos, y buscar `axon-T957` o `secret_partition`
+            // tiene que encontrarlos.
             content: 'article p, article li, article td, article pre',
-            pageRank: url.pathname.includes('/reference/') ? '1' : '0',
           },
           aggregateContent: true,
           recordVersion: 'v3',
