@@ -103,11 +103,12 @@ curl -sI https://ricardovelit.com/axon-docs/assets/css/styles.*.css | head -1
 |---|---|
 | Application ID | `U78MSO2SV3` ✅ |
 | Search API Key | ✅ (pública por diseño, viaja en el bundle) |
-| Índice | `ALGOLIA_INDEX_AXON` ✅ existe |
+| Índice | `axon-docs` ✅ (renombrado el 2026-08-22) |
 | Registros en el índice | **0** ⛔ |
 
-El nombre del índice se resolvió consultando la API, no preguntando: solo
-`ALGOLIA_INDEX_AXON` responde; `axon-docs`, `axon` y `docs-axon-lang` no existen.
+El nombre del índice se resolvió consultando la API, no preguntando: primero
+respondía solo `ALGOLIA_INDEX_AXON`, y tras renombrarlo, solo `axon-docs`.
+Verificado por API en los dos momentos.
 
 ### El orden importa, y es al revés de lo que parece
 
@@ -125,7 +126,11 @@ La secuencia correcta:
 2. **Comprobar que el índice tiene contenido** antes de tocar nada:
 
    ```bash
-   curl -s -X POST      "https://U78MSO2SV3-dsn.algolia.net/1/indexes/ALGOLIA_INDEX_AXON/query"      -H "X-Algolia-API-Key: <search-key>"      -H "X-Algolia-Application-Id: U78MSO2SV3"      -d '{"query":"shield","hitsPerPage":3}' | head -c 400
+   curl -s -X POST \
+     "https://U78MSO2SV3-dsn.algolia.net/1/indexes/axon-docs/query" \
+     -H "X-Algolia-API-Key: <search-key>" \
+     -H "X-Algolia-Application-Id: U78MSO2SV3" \
+     -d '{"query":"shield","hitsPerPage":3}' | head -c 400
    ```
 
    Debe devolver `nbHits` > 0 y aciertos con URLs de `ricardovelit.com/axon-docs/`.
@@ -135,17 +140,11 @@ La secuencia correcta:
    ```
    ALGOLIA_APP_ID=U78MSO2SV3
    ALGOLIA_SEARCH_API_KEY=<la de solo búsqueda>
-   ALGOLIA_INDEX_NAME=ALGOLIA_INDEX_AXON
+   ALGOLIA_INDEX_NAME=axon-docs
    ```
 
 4. **Redesplegar** y verificar. Si algo falla, quitar las variables devuelve el
    índice local: el respaldo sigue en el repo y no hay que revertir código.
-
-### Sobre el nombre del índice
-
-`ALGOLIA_INDEX_AXON` es el nombre de una variable de entorno, no de un índice.
-Funciona igual, pero si se va a renombrar a algo como `axon-docs`, **ahora es
-gratis y después cuesta un recrawl completo**. Está vacío: es el momento.
 
 ### Las otras tres claves
 
