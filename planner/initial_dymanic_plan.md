@@ -1,6 +1,6 @@
-# AXON Docs — Plan Vivo (v0.15)
+# AXON Docs — Plan Vivo (v0.16)
 
-> **Estado:** F5 COMPLETA · en F6 · iterable · 14 de 16 cerradas — solo quedan D4 y D6,
+> **Estado:** F6 ✔ · F7 preparada, a la espera de credenciales · iterable · 14 de 16 cerradas — solo quedan D4 y D6,
 > que son recomendaciones aplicadas salvo objeción y no bloquean nada
 > **Última revisión:** 2026-08-21
 > **Regla del documento:** este archivo es la única fuente de verdad del proyecto
@@ -674,7 +674,7 @@ el gasto; cancelar del todo es lo único irreversible.
 | **F5** ✔ Contenido | bloques 1 y 2 del §5 (Empezar + Lenguaje) escritos | alguien ajeno escribe y ejecuta su primer agente solo con la doc |
 | **F5b** Capacidades | plugin generador desde `capabilities.toml` + gate de CI (§5.6) | toda capacidad del catálogo tiene página; ninguna URL del compilador 404 |
 | **F5c** Frontera | bloque 5: verificar vs. certificar, tabla open-core, `/licensing`, flujos de red, continuidad | un comité de compras entiende qué compra sin ver un precio |
-| **F6** Calidad | lint de tokens, enlaces, snippets verificados, a11y, OG images | CI verde en PR |
+| **F6** ✔ Calidad | lint de tokens, enlaces, snippets verificados, a11y, OG images | CI verde en PR |
 | **F7** Búsqueda | Algolia DocSearch + Ask AI en producción | Ask AI responde con citas correctas a 5 preguntas de prueba |
 
 Los bloques 3–5 del §5 (Runtime, Herramientas, Enterprise) se escriben tras F7 en
@@ -828,6 +828,20 @@ Keywords de trabajo: `axon-lang`, `cognitive runtime`, `cognitive OS`,
 
 ## 16. Registro de iteraciones
 
+- **v0.16 · 2026-08-22** — **F6 completa y F7 preparada.** CI en GitHub Actions
+  con tres jobs, verde en el runner: build EN+ES (que con `onBrokenLinks: throw`
+  ES el verificador de enlaces), los cuatro checkers, humo sirviendo el build,
+  `axon check` sobre cada ejemplo, y aviso no bloqueante de deriva de versión.
+  Nuevo `scripts/check-tokens.py` (con un bug de backtracking corregido: el
+  lookahead tras `\s*` marcaba como violación cada línea correcta) y
+  `scripts/extract-snippets.py`, que separa ejemplos completos de fragmentos.
+  **Primera pasada del gate: 104/104 ejemplos compilan contra v4.4.0**, y el
+  único fallo era sintaxis inventada por mí en la página de control de
+  resaltado (`run … -> Answer`, que `run` no acepta).
+  **F7:** búsqueda local funcionando en los dos idiomas, con conmutación a
+  Algolia por variables de entorno — sin tocar código. `algolia-crawler.js` y
+  `planner/despliegue.md` listos. Falta lo que necesita cuentas.
+  **Deriva detectada:** v4.4.0 se publicó el 2026-08-21; la doc declara v4.3.0.
 - **v0.15 · 2026-08-21** — **F5 completa. D17 cerrada: 30/30 páginas, 23.754
   palabras en español**, el 21% del corpus, tal y como se dimensionó. Las 22
   doctrinas traducidas en cuatro bloques agrupados por familia conceptual, para

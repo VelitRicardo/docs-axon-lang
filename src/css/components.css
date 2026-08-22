@@ -410,4 +410,74 @@
     font-weight: 600;
     letter-spacing: normal;
   }
+
+  /* ─── Búsqueda ──────────────────────────────────────────────────── */
+
+  /**
+   * Cubre los dos motores (plan §9): el índice local de ahora y DocSearch
+   * cuando lleguen las claves. DocSearch expone sus propias `--docsearch-*`,
+   * así que se mapean a las nuestras en vez de reescribir su hoja de estilos —
+   * el modal cambia de piel sin que toquemos su marcado.
+   */
+  .navbar__search-input {
+    border: var(--hairline) solid var(--border-hairline);
+    border-radius: var(--radius);
+    background-color: var(--surface-raised);
+    font-family: var(--font-text);
+    font-size: var(--size-sm);
+    color: var(--text-primary);
+    transition: border-color var(--duration) var(--ease);
+  }
+
+  .navbar__search-input:hover,
+  .navbar__search-input:focus {
+    border-color: var(--border-control);
+  }
+
+  .navbar__search-input::placeholder {
+    color: var(--text-muted);
+  }
+
+  :root,
+  [data-theme='dark'] {
+    --docsearch-primary-color: var(--text-link);
+    --docsearch-text-color: var(--text-primary);
+    --docsearch-muted-color: var(--text-muted);
+    --docsearch-container-background: color-mix(in srgb, var(--surface-inverse) 55%, transparent);
+    --docsearch-modal-background: var(--surface-page);
+    --docsearch-modal-shadow: none;
+    --docsearch-searchbox-background: var(--surface-raised);
+    --docsearch-searchbox-focus-background: var(--surface-raised);
+    --docsearch-searchbox-shadow: none;
+    --docsearch-hit-color: var(--text-primary);
+    --docsearch-hit-background: var(--surface-raised);
+    --docsearch-hit-active-color: var(--color-accent-contrast);
+    --docsearch-hit-shadow: none;
+    --docsearch-footer-background: var(--surface-sunken);
+    --docsearch-footer-shadow: none;
+    --docsearch-key-gradient: var(--surface-sunken);
+    --docsearch-key-shadow: none;
+    --docsearch-logo-color: var(--text-muted);
+  }
+
+  /* La caja del modal, con filete en lugar de sombra, como todo lo demás. */
+  .DocSearch-Modal,
+  .searchBarContainer_NW3z .dropdownMenu {
+    border: var(--hairline) solid var(--border-hairline);
+    border-radius: var(--radius);
+    box-shadow: none;
+  }
+
+  /* El resultado activo: el acento como fondo solo aquí, donde el texto que
+     va encima es --color-accent-contrast y el contraste está verificado. */
+  .DocSearch-Hit[aria-selected='true'] a {
+    background-color: var(--color-accent-mid);
+  }
+
+  .DocSearch-Hit-title mark,
+  .search-result-match {
+    background: none;
+    color: var(--color-accent-text);
+    font-weight: 600;
+  }
 }

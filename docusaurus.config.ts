@@ -14,6 +14,22 @@ import {
 
 const BASE_URL = '/axon-docs/';
 
+/**
+ * Búsqueda: Algolia si hay credenciales, local si no (plan §9).
+ *
+ * El intercambio es una variable de entorno, no una reescritura: mientras el
+ * sitio no esté en producción con su dominio, Algolia no puede rastrearlo, y
+ * una doc sin buscador es una doc a medias. El índice local se construye en el
+ * build y funciona sin red ni claves.
+ *
+ * Cuando existan las claves, se definen en Vercel y este archivo no cambia.
+ * La de búsqueda es PÚBLICA por diseño; la admin no entra aquí jamás.
+ */
+const ALGOLIA_APP_ID = process.env.ALGOLIA_APP_ID;
+const ALGOLIA_SEARCH_KEY = process.env.ALGOLIA_SEARCH_API_KEY;
+const ALGOLIA_INDEX = process.env.ALGOLIA_INDEX_NAME;
+const usarAlgolia = Boolean(ALGOLIA_APP_ID && ALGOLIA_SEARCH_KEY && ALGOLIA_INDEX);
+
 const config: Config = {
   // Plan §15 — el `title` del sitio es el sufijo de cada <title>. Se usa el
   // identificador técnico para que ninguna página quede titulada solo "AXON",
@@ -36,6 +52,22 @@ const config: Config = {
   projectName: 'axon-lang',
 
   onBrokenLinks: 'throw',
+
+  plugins: usarAlgolia
+    ? []
+    : [
+        [
+          '@easyops-cn/docusaurus-search-local',
+          {
+            hashed: true,
+            indexBlog: false,
+            language: ['en', 'es'],
+            docsRouteBasePath: '/',
+            highlightSearchTermsOnTargetPage: true,
+            searchResultLimits: 8,
+          },
+        ],
+      ],
 
   headTags: [
     // Respaldo para navegadores que no leen favicons SVG.
@@ -152,6 +184,20 @@ const config: Config = {
       ],
       copyright: `AXON — by ${AUTHOR_NAME}. Apache 2.0.`,
     },
+    ...(usarAlgolia
+      ? {
+          algolia: {
+            appId: ALGOLIA_APP_ID!,
+            apiKey: ALGOLIA_SEARCH_KEY!,
+            indexName: ALGOLIA_INDEX!,
+            // Faceta obligatoria (plan §9): sin esto, buscar desde /es/
+            // devuelve resultados en inglés — el fallo clásico de i18n.
+            contextualSearch: true,
+            searchPagePath: 'search',
+          },
+        }
+      : {}),
+
     prism: {
       // Un solo tema para los dos modos: sus colores son var(--syntax-*), que
       // ya cambian con el tema. Dos temas podrían desincronizarse; uno, no.
