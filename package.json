@@ -12,7 +12,13 @@
     "serve": "docusaurus serve",
     "write-translations": "docusaurus write-translations",
     "write-heading-ids": "docusaurus write-heading-ids",
-    "typecheck": "tsc"
+    "typecheck": "tsc",
+    "check:tokens": "python scripts/check-tokens.py",
+    "check:contrast": "python scripts/check-contrast.py",
+    "check:translations": "python scripts/check-translations.py --strict",
+    "check:codeblocks": "python scripts/check-code-blocks.py",
+    "check": "npm run typecheck && npm run check:tokens && npm run check:contrast && npm run check:translations && npm run check:codeblocks",
+    "snippets": "python scripts/extract-snippets.py --out snippets"
   },
   "dependencies": {
     "@docusaurus/core": "3.10.2",

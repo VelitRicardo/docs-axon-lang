@@ -1,0 +1,131 @@
+name: CI
+
+# Plan §12-F6. Cada garantía que hemos ido construyendo tiene aquí su gate:
+# una regla que solo yo verifico es una intención, no una garantía.
+
+on:
+  push:
+    branches: [master]
+  pull_request:
+  workflow_dispatch:
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  NODE_VERSION: '22'
+
+jobs:
+  build:
+    name: Build y verificaciones estáticas
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+
+      - run: npm ci
+
+      - name: Tipos
+        run: npm run typecheck
+
+      # Con `onBrokenLinks: throw` y `onBrokenMarkdownLinks: throw`, el build
+      # ES el verificador de enlaces. Cubre EN y ES.
+      - name: Build (en + es)
+        run: npm run build
+
+      - name: Centro de control CSS — ningún literal fuera de tokens.css
+        run: python scripts/check-tokens.py
+
+      - name: Contraste WCAG AA de los tokens
+        run: python scripts/check-contrast.py
+
+      - name: Traducciones — cobertura e inglés residual
+        run: python scripts/check-translations.py --strict
+
+      - name: Integridad del código en las páginas traducidas
+        run: python scripts/check-code-blocks.py
+
+      - name: Humo — el build se sirve
+        run: |
+          npm run serve -- --port 3000 --no-open &
+          for i in $(seq 1 30); do
+            curl -sf http://localhost:3000/axon-docs/ > /dev/null && break
+            sleep 1
+          done
+          curl -sfI http://localhost:3000/axon-docs/ > /dev/null
+          curl -sfI http://localhost:3000/axon-docs/es/ > /dev/null
+
+  snippets:
+    name: axon check sobre los ejemplos
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+
+      # Se descarga el binario publicado en vez de compilar el crate: un
+      # `cargo install axon-lang` en cada PR serían minutos de Rust + C para
+      # comprobar algo que el binario ya sabe hacer en segundos.
+      - name: Descargar el compilador axon
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh release download --repo VelitRicardo/axon-lang \
+            --pattern 'axon-linux-x86_64.tar.gz' --output axon.tar.gz
+          tar -xzf axon.tar.gz
+          chmod +x axon
+          ./axon --version
+
+      - name: Extraer los ejemplos del corpus
+        run: python scripts/extract-snippets.py --out snippets
+
+      # La doc se contrasta contra el compilador, no contra sí misma: un
+      # ejemplo que dejó de compilar hace tres versiones se lee igual de bien
+      # que uno correcto.
+      - name: Comprobar cada ejemplo
+        run: |
+          fallos=0
+          total=0
+          for f in snippets/*.axon; do
+            total=$((total + 1))
+            if ! ./axon check "$f" > /tmp/out 2>&1; then
+              fallos=$((fallos + 1))
+              echo "::error file=$f::$(head -1 /tmp/out)"
+              cat /tmp/out
+            fi
+          done
+          echo "$total ejemplo(s) · $fallos fallo(s)"
+          test "$fallos" -eq 0
+
+  version:
+    name: Deriva de versión
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      # No bloquea: que salga una versión del lenguaje no debe poner rojo un PR
+      # de la doc. Pero la deriva tiene que ser VISIBLE — una doc que dice estar
+      # escrita contra una versión que ya no existe miente en silencio.
+      - name: Comparar links.ts con el último release
+        continue-on-error: true
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          doc=$(grep -oP "AXON_VERSION = '\K[^']+" src/config/links.ts)
+          ultima=$(gh release view --repo VelitRicardo/axon-lang --json tagName --jq .tagName | tr -d v)
+          echo "doc: $doc · release: $ultima"
+          if [ "$doc" != "$ultima" ]; then
+            echo "::warning::La doc dice v$doc y el último release es v$ultima."
+            exit 1
+          fi

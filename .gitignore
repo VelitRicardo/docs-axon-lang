@@ -24,3 +24,6 @@ yarn-error.log*
 # Artefactos temporales del trazado de la marca
 *.npy
 _shapes.json
+
+# Ejemplos extraídos para el gate de axon check
+/snippets

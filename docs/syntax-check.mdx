@@ -70,9 +70,11 @@ flow ScreenClinicalNote(note: Document) -> PHIReport {
 }
 ```
 
-Construcciones que faltaban por cubrir:
+Construcciones que faltaban por cubrir. Marcado `fragment` porque es un
+collage de declaraciones para probar el resaltado, no un programa: el gate de
+`axon check` lo omite a propósito.
 
-```axon
+```axon fragment
 agent Asistente {
   goal: "Responder con una respuesta breve y verificada"
   tools: [Calculator, DateTimeTool]
@@ -87,5 +89,5 @@ shield GuardiaEntrada {
   severity: high
 }
 
-run Asistente(question) -> Answer
+run Asistente(question) as AnalistaInvestigador
 ```
