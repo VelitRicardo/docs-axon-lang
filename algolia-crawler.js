@@ -14,26 +14,28 @@
 
 new Crawler({
   appId: 'U78MSO2SV3',
-  apiKey: 'CRAWLER_API_KEY', // la del crawler, NO la de búsqueda ni la admin
+  apiKey: 'cc1c5da1900cea16712d7348b22d06d1', // la del crawler, NO la de búsqueda ni la admin
 
   indexPrefix: '',
   rateLimit: 8,
   maxDepth: 10,
 
-  startUrls: ['https://ricardovelit.com/axon-docs/'],
-  sitemaps: ['https://ricardovelit.com/axon-docs/sitemap.xml'],
+  // www, no el apex: el apex hace 308 y el crawler acabaría con patrones que
+  // no casan con el host al que llega. Es el fallo que dejó el índice en 0.
+  startUrls: ['https://www.ricardovelit.com/axon-docs/'],
+  sitemaps: ['https://www.ricardovelit.com/axon-docs/sitemap.xml'],
 
   // El origen de Vercel sirve el mismo contenido y NO debe indexarse: dos
   // orígenes con el mismo texto parten los enlaces y ensucian el índice.
   exclusionPatterns: ['**/*.vercel.app/**'],
 
-  discoveryPatterns: ['https://ricardovelit.com/axon-docs/**'],
+  discoveryPatterns: ['https://www.ricardovelit.com/axon-docs/**'],
   ignoreCanonicalTo: false,
 
   actions: [
     {
       indexName: 'axon-docs',
-      pathsToMatch: ['https://ricardovelit.com/axon-docs/**'],
+      pathsToMatch: ['https://www.ricardovelit.com/axon-docs/**'],
       recordExtractor: ({ helpers, url }) => {
         // La faceta de idioma es OBLIGATORIA (plan §9). Sin ella, buscar desde
         // /es/ devuelve resultados en inglés: el fallo clásico de i18n con

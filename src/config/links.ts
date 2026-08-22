@@ -19,8 +19,19 @@ export const REPO_BRANCH = 'main';
  */
 export const COMMERCIAL_URL = 'https://ricardovelit.com/axon';
 
-/** Sitio del autor. */
-export const AUTHOR_URL = 'https://ricardovelit.com';
+/**
+ * Sitio del autor.
+ *
+ * **Con `www`, y no es cosmético.** El apex hace un 308 permanente hacia www,
+ * así que es www quien sirve de verdad. De este valor salen el `url` del sitio,
+ * el `rel=canonical` de cada página y cada `<loc>` del sitemap: declarar el
+ * apex significaba declarar un host que redirige.
+ *
+ * Costó un rastreo completo de Algolia: el crawler arrancaba en el apex,
+ * seguía el 308 y sus patrones —escritos con el apex— dejaban de casar, así
+ * que descartaba las 204 páginas. El índice quedó en 0 sin un solo error.
+ */
+export const AUTHOR_URL = 'https://www.ricardovelit.com';
 
 /** Autor y desarrollador único del proyecto. */
 export const AUTHOR_NAME = 'Ricardo Velit';
