@@ -10,12 +10,12 @@ cinco pasos que solo puedes dar tú, porque requieren cuentas.
 | Pieza | Estado |
 |---|---|
 | `url` + `baseUrl` de subdirectorio | ✅ en `docusaurus.config.ts` |
-| `vercel.json` del proyecto de la doc | ✅ noindex condicionado por host |
+| `vercel.json` del proyecto de la doc | ✅ noindex por host + `cleanUrls` |
 | Búsqueda funcionando | ✅ índice local, EN y ES |
 | Conmutación a Algolia | ✅ por variables de entorno, sin tocar código |
 | Config del crawler | ✅ `algolia-crawler.js`, con la faceta de idioma |
 | Estilos del modal de búsqueda | ✅ mapeados a nuestros tokens |
-| Proyecto en Vercel | ⬜ **tú** |
+| Proyecto en Vercel | ✅ `docs-axon-lang`, producción en `master` |
 | Rewrite desde `ricardovelit.com` | ⬜ **tú** |
 | `seal-axon.dev` | ⬜ **tú** |
 | Claves de Algolia | ⬜ **tú** |
@@ -35,15 +35,21 @@ del autor, así que su URL pública es la de Vercel y el `vercel.json` ya le pon
 `noindex` a ese origen — condicionado por host, para que la cabecera no viaje
 por el rewrite y desindexe el canónico.
 
+`cleanUrls` no es opcional aquí. Con `trailingSlash: false` el build escribe
+`quickstart.html` pero el HTML enlaza `/axon-docs/quickstart`; sin `cleanUrls`
+Vercel devuelve 404 en toda página que no sea la home. Comprobado contra el
+deployment: `/quickstart` 404, `/quickstart.html` 200. **Requiere redesplegar**
+para que surta efecto.
+
 ## 2 · El rewrite, en el proyecto de `ricardovelit.com`
 
 ```json
 {
   "rewrites": [
     { "source": "/axon-docs",
-      "destination": "https://<proyecto-doc>.vercel.app" },
+      "destination": "https://docs-axon-lang.vercel.app" },
     { "source": "/axon-docs/:path*",
-      "destination": "https://<proyecto-doc>.vercel.app/:path*" }
+      "destination": "https://docs-axon-lang.vercel.app/:path*" }
   ]
 }
 ```

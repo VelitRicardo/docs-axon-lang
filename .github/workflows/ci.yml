@@ -42,6 +42,13 @@ jobs:
       - name: Build (en + es)
         run: npm run build
 
+      # Un vercel.json inválido no rompe el build de Docusaurus: rompe el
+      # DESPLIEGUE, en silencio y solo en producción. `\.` no es un escape
+      # válido en JSON, y con él Vercel descarta el documento entero — se
+      # pierden cleanUrls y las cabeceras a la vez.
+      - name: vercel.json parsea
+        run: python -c "import json; json.load(open('vercel.json')); print('vercel.json ok')"
+
       - name: Centro de control CSS — ningún literal fuera de tokens.css
         run: python scripts/check-tokens.py
 
