@@ -1,0 +1,91 @@
+---
+title: "Ninguna ventaja sin testigo — la ley del Advantage Witness (`witness { … }`)"
+description: "La ley transversal de que ninguna primitiva puede afirmar una ventaja sobre una alternativa más barata salvo que lleve un testigo comprobable por máquina de que la ventaja es real y supera su umbral de coste sobre datos reales. La sofisticación sin testigo…"
+---
+
+Toda construcción sofisticada —un kernel cuántico, un reordenador, una
+deliberación de varios pasos, un bucle de memoria adaptativa— está haciendo,
+implícitamente, una *afirmación*: **"valgo más que la cosa barata a la que
+sustituí"**. Casi todo el sector publica esa afirmación por fe. AXON no. Esta
+página es la ley.
+
+> **Ninguna primitiva puede afirmar una ventaja sobre una alternativa más barata
+> salvo que lleve un testigo comprobable por máquina de que la ventaja es real y
+> supera su umbral de coste sobre datos reales.** La sofisticación sin testigo
+> degrada, honestamente, a la alternativa barata.
+
+Es el mismo reflejo de compilador honesto que
+`axon://logic/dispatch_vs_cognition` (no finjas determinismo del LLM) y que el
+resolutor de modelos consciente de capacidades (declara la necesidad, falla
+cerrado), generalizado en una sola regla que alcanza a **todas** las primitivas.
+
+## La declaración `witness`
+
+```text
+witness SeedKernelBeatsCosine {
+    claim:     SeedKernel              # the sophisticated construct
+    against:   cosine                  # the cheaper baseline it claims to beat
+    metric:    geometric_difference    # how advantage is measured (closed catalog)
+    threshold: 0.05                    # the minimum advantage that justifies the cost
+    data:      mdn_embeddings          # the REAL data it is witnessed on
+}
+```
+
+La métrica sale de un **catálogo cerrado** (ampliarlo es un PR deliberado, nunca
+un conjunto abierto): `geometric_difference` y `kernel_target_alignment` (kernels
+de quant), `ranking_lift` (recuperación y navigate), `outcome_lift`
+(deliberación). El testigo es transversal — la *misma* superficie sirve para
+cualquier primitiva; solo cambia la métrica.
+
+## Qué demuestra el compilador frente a qué se mide
+
+- **`axon check` demuestra que el testigo está bien FORMADO** (`axon-E0790`): una
+  métrica conocida, un `threshold ≥ 0` finito y las referencias necesarias
+  presentes. En particular, **`data:` es obligatorio** — no puedes afirmar una
+  ventaja *en abstracto*. La ventaja siempre es relativa a una alternativa, sobre
+  datos reales.
+- **El VALOR de la ventaja se calcula sobre esos datos reales en el despliegue o
+  en ejecución** y se transporta como un veredicto
+  `{ metric, measure, threshold, holds, baseline }` (un objeto de prueba PCC
+  verificable de forma independiente). `holds = measure > threshold`.
+
+## Honestidad que falla cerrado — degradar a la alternativa
+
+Cuando `measure ≤ threshold`, el veredicto es `holds: false`, y el compilador o el
+runtime dicen la verdad y nombran la diferencia — **no** publican la construcción
+en silencio como si fuera una ventaja. Para un kernel de quant que se resuelve al
+coseno clásico (codificación en amplitud más observables de Pauli fijos — véase
+`axon://primitives/quant`), el testigo falla y `axon-W007` recomienda la
+alternativa:
+
+> `axon-W007`: no measurable quantum advantage (provably cosine for amplitude+Pauli)
+> — use classical cosine, or a re-uploading feature map.
+
+Para cualquier otra primitiva cuya ventaja caiga en su umbral o por debajo,
+`axon-W008` da el genérico "no measurable advantage — degrade to the baseline".
+
+## Los cuatro pilares
+
+| | El testigo de ventaja |
+|---|---|
+| **Matemática** | la ventaja es una cantidad *medida* frente a una alternativa (`g`, KTA, ganancia de ranking), no una impresión |
+| **Lógica** | el veredicto es una obligación de prueba — `holds` es recomprobable contra el artefacto (PCC `AdvantageWitnessed`) |
+| **Filosofía** | una afirmación hay que *ganársela*, no proclamarla; la alternativa barata es la hipótesis nula honesta |
+| **Computación** | el testigo se evalúa sobre datos reales; la sofisticación sin testigo es código muerto pagando alquiler |
+
+## Por qué existe esto
+
+La mentira más cara del aprendizaje automático aplicado es **"esta complejidad
+merece la pena"**. Un kernel cuántico que en secreto es coseno, un reordenador que
+no reordena mejor, un bucle multiagente que no razona mejor — cada uno publica
+coste sin beneficio, y nadie lo mide. AXON convierte la medición en una
+*característica del lenguaje*: no te deja desplegar teatro —cuántico o del que
+sea— creyendo que es ventaja. Y es honesto en las dos direcciones: cuando una
+construcción sí gana a su alternativa, el testigo lo *demuestra*.
+
+## Véase también
+
+- `axon://primitives/quant` — la primera primitiva con testigo (el teorema de que
+  la fidelidad en amplitud ≡ coseno; la métrica de diferencia geométrica; la
+  recarga de datos como escapatoria real).
+- `axon://logic/dispatch_vs_cognition` — la ley hermana del compilador honesto.

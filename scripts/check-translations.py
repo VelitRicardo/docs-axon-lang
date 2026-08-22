@@ -52,6 +52,12 @@ def limpiar(texto: str) -> list[str]:
         if linea.lstrip().startswith(("|", ">", "    ")):
             continue
         linea = re.sub(r"`[^`]*`", "", linea)
+        # Los diagnosticos del compilador se citan literalmente entre comillas y
+        # se dejan en ingles a proposito (ver planner/glosario-es.md): el lector
+        # los va a ver asi en su terminal. Si no se excluyeran, cada cita seria
+        # un falso positivo permanente, y un verificador que siempre chilla es
+        # un verificador que nadie mira.
+        linea = re.sub(r"[\"“][^\"”]*[\"”]", "", linea)
         if linea.strip():
             lineas.append(linea.strip())
     return lineas

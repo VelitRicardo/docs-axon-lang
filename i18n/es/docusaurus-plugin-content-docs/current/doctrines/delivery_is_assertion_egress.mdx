@@ -1,0 +1,100 @@
+---
+title: "Entregar es sacar aserciones — un valor escrito en un sistema de registro debe llevar su…"
+description: "La ley que gobierna `deliver` (v2.60.0), el dual de salida de la adquisición (`scrape`, v2.52.0). Escribir un registro en un CRM no es fontanería de E/S — es PUBLICAR ASERCIONES en un sistema de registro que las personas de aguas abajo (un comercial, un…"
+---
+
+`deliver` es el punto donde un valor **sale del retículo epistémico hacia un
+sistema de registro automatizado** — un CRM cuyas filas las personas de aguas
+abajo tratan como hecho verificado. Es el dual exacto de `scrape` (v2.52.0):
+donde un valor raspado ENTRA en el programa nacido adversario y sin confianza,
+un valor entregado SALE hacia un sistema que le confiere una autoridad que el
+valor puede no haberse ganado nunca.
+
+> **La ley.** Un valor escrito en un sistema de registro debe llevar su origen
+> epistémico (`provenance: attached`, el valor por defecto), O quien lo escribe
+> debe haber respondido por él —bajo `epistemic { believe|know }`, después de que
+> un `shield` y un `anchor` lo hayan despejado— afirmando que es un hecho
+> verificado (`provenance: cleared`). Quitarle el origen a un valor sin confianza
+> o inferido en la frontera de entrega es imposible: es un rechazo en compilación
+> (`axon-T920`), no una sorpresa en ejecución. La conjetura de un proveedor llega
+> al CRM *etiquetada como conjetura*, o no llega desnuda.
+
+## Por qué esto es una ley y no un linter
+
+Un correo enriquecido por la v2.58.0 es la conjetura probabilística del modelo de
+un proveedor — nacido `speculate` (una heurística de patrón) o `believe`
+(verificado como entregable), **nunca `know`**, y epistémicamente sin confianza.
+El CRM no lo sabe. Una fila en un sistema de registro *se lee como verdadera* — el
+formato le confiere una autoridad que el valor nunca se ganó. Anotar un correo
+`speculate` como un campo `email` a secas es precisamente el blanqueo de
+aserciones que la v2.53.0 prohíbe para un `document` (T916); `deliver` es esa
+misma barrera en forma de salida (T920).
+
+## La superficie
+
+```text
+deliver PushLead {
+    target:     crm            # the system-of-record class (axon-T921)
+    provenance: attached       # each field lands with its level/confidence/source
+    secret: crm_api_key # v2.48.0 custody — the credential never enters cognition
+    effects:    <web>          # a CRM write crosses the network trust boundary (axon-T924)
+    upsert_contact {
+        key:   lead_email      # idempotency key — a retry never double-creates (axon-T926)
+        email: lead_email
+        name:  lead_name
+    }
+}
+```
+
+`provenance: cleared` es legal SOLO cuando el flow responde por los valores:
+
+```text
+# axon-T920: launders a vendor guess into the CRM as a bare fact.
+deliver bad { target: crm  secret: k  effects: <web>  provenance: cleared
+    upsert_contact { key: guessed_email  email: guessed_email }
+}
+
+# OK: the author vouches the values are ≥ believe (after shield + anchor).
+believe {
+    deliver good { target: crm  secret: k  effects: <web>  provenance: cleared
+        upsert_contact { key: verified_email  email: verified_email }
+    }
+}
+```
+
+## Las tres capas de imposición (todas fallan cerrado)
+
+1. **Compilación** — `axon-T920` (la barrera contra quitar la procedencia) más
+   `T921–T926` (catálogo de destinos, catálogo de procedencias, `secret:`
+   obligatorio, efecto `web`, catálogo de operaciones y que no esté vacío, clave
+   `key:` de idempotencia).
+2. **Verificación y despliegue** — la clase PCC `DeliveryProvenanceSoundness`
+   vuelve a derivar T920 (y T921/T924) desde la IR compilada, así que una IR
+   editada a mano que ponga `provenance` en `cleared` sin el respaldo queda
+   REFUTADA antes de desplegarse.
+3. **Ejecución (edición enterprise)** — una compuerta de segregación de funciones
+   `crm:deliver` (que expande roles), más una marca legal por inquilino (apagada
+   por defecto), más una auditoría `crm:delivered` que falla cerrada y que
+   atestigua los tipos de operación y el número de campos de la entrega — **nunca
+   los valores de datos personales** (un correo entregado es en sí mismo un dato
+   personal).
+
+## Qué NO promete la ley
+
+- **No promete que el CRM conserve la etiqueta.** Una vez los bytes llegan al
+  proveedor, que sobreviva el acompañante `axon_provenance` es responsabilidad del
+  CRM de quien lo adopta — el mismo perímetro honesto que `document` (v2.53.0):
+  axon garantiza que el artefacto sale *etiquetado*, no que toda herramienta de
+  aguas abajo respete la etiqueta.
+- **No promete una base legal.** Entregar datos personales enriquecidos por la
+  v2.58.0 es *tratamiento ulterior*; la gobernanza demuestra diligencia, no crea
+  una base legal bajo el RGPD (el inquilino es el responsable del tratamiento).
+
+## Véase también
+
+- `document` (v2.53.0) — la primitiva hermana de salida (hacia un artefacto
+  humano); su barrera T916 contra el blanqueo de aserciones es la misma ley para
+  otro destino.
+- `scrape` (v2.52.0) — el dual de adquisición; entrada nacida sin confianza.
+- La vertical de generación de leads: adquirir (v2.56.0) → enriquecer (v2.58.0) →
+  **entregar** (v2.60.0).

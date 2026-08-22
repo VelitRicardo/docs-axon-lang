@@ -1,0 +1,86 @@
+---
+title: "Una derivada se DERIVA, no se muestrea — el gradiente con prueba incorporada (v2.65.0)"
+description: "La ley que gobierna `grad` (v2.65.0). En cualquier otro sitio, un gradiente es algo en lo que hay que confiar: una cinta de ejecución corrió sobre Python abierto (JAX/PyTorch — potente, opaco, inverificable) o un cociente de diferencias finitas lo aproximó (con un…"
+---
+
+Pídele a cualquier pila de agentes una sensibilidad —"¿cuánto se mueve la
+puntuación si se mueve el peso?"— y obtendrás una de estas tres cosas:
+
+1. **Una diferencia finita**: `(f(x+h) − f(x))/h`, una *aproximación* cuyo error
+   depende de una `h` que nadie declara.
+2. **Una cinta**: el autograd en modo inverso volvió a correr tu programa abierto
+   y registró lo que vio. Potente — y opaco: el gradiente es un artefacto de
+   ejecución en el que hay que confiar.
+3. **Una narración**: el modelo dice "unos 3". Infalsable.
+
+axon rechaza las tres. La **v2.65.0** convierte la derivada en un *teorema en
+compilación sobre la expresión que declaraste*:
+
+```
+flow Score(x: Float, y: Float) -> Text {
+    let total = 3.0 * x + y * y
+    grad total wrt [x, y] as g
+    return g
+}
+```
+
+## El teorema — clausura diferencial
+
+El fragmento diferenciable de la `Expr` cerrada (v2.26.0) —literales numéricos,
+referencias, negación, `+ − × ÷` y la inmersión `as_float`— es **cerrado bajo
+diferenciación**: el lado derecho de cada regla de la sección 5.2 está construido
+con miembros del fragmento. Así que una derivada es *otra expresión cerrada*:
+evaluable por el evaluador que ya existe, comprobable por el verificador que ya
+existe, y diferenciable otra vez — el gradiente del gradiente está bien definido
+por construcción.
+
+## La derivación — en compilación, dentro de la IR
+
+`grad total wrt [x, y]` resuelve la expresión que enlazó el `let` rico anterior
+(su AST ya viaja en la IR), aplica las reglas simbólicas (linealidad; producto
+`(e₁e₂)' = e₁'e₂ + e₁e₂'`; cociente; cadena por recursión estructural) y luego
+corre el **simplificador determinista** (`0+e→e`, `1·e→e`, plegado de constantes —
+hasta punto fijo). El resultado —aquí `∂/∂x = 3.0`, `∂/∂y = y + y`— se guarda en
+`IRGradStep.derivatives`: un artefacto que puedes LEER.
+
+## Las leyes
+
+- **`axon-T932`** — el objetivo debe ser un `let` rico **anterior** en el mismo
+  flow, con al menos un `wrt`. grad diferencia la EXPRESIÓN declarada, nunca un
+  valor de ejecución.
+- **`axon-T931`** — una construcción no diferenciable (`mod`, una comparación, una
+  lógica, `length()`, acceso a campo o a índice) es un **rechazo de compilación que
+  nombra la construcción y su posición**. Nunca un cero silencioso: un gradiente
+  sobre `len(s)` no existe, y axon no se lo inventa.
+
+## La prueba — en el despliegue
+
+La PCC **`GradientSoundness`** vuelve a diferenciar la expresión original de cada
+grad (las mismas reglas, el mismo simplificador — el que prueba y el que verifica
+coinciden después de simplificar, que es la decisión de diseño) y la compara
+estructuralmente con las derivadas almacenadas. Cambia una derivada por una
+constante halagadora en un artefacto editado a mano y el despliegue se rechaza
+(409).
+
+## La evaluación — en ejecución, trivialmente
+
+El manejador evalúa las derivadas almacenadas con los enlaces actuales usando el
+MISMO evaluador total que usa `let`. Sin LLM, sin cinta, 0 tokens. Una variable
+sin enlazar o un error de dominio (división por cero) **rechaza** — un gradiente
+no se fabrica nunca.
+
+## El perímetro honesto
+
+Escalares. Primer orden. El fragmento aritmético. Sin tensores, sin matrices, sin
+afirmaciones sobre entrenamiento de redes y sin afirmaciones de rendimiento hasta
+el Sandbox. El fragmento es pequeño y la garantía es **total** — ese intercambio
+es el producto: *el gradiente de axon es un teorema sobre la expresión que
+declaraste, no una medición de tu ejecución.*
+
+## Véase también
+
+- `analysis_is_algebra_not_conversation` (v2.63.0) — el plano de datos con el que
+  compone (los gradientes sobre agregados son el futuro declarado).
+- `effects_are_linear` / `dispatch_vs_cognition` — por qué una derivada es
+  matemática del plano de control y no un efecto (sin RBAC, sin fila de auditoría:
+  nada sale del retículo).

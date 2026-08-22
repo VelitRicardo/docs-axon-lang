@@ -1,0 +1,112 @@
+---
+title: "El análisis es álgebra, no conversación — el plano de datos determinista (v2.63.0)"
+description: "La ley que gobierna los cinco verbos del plano de datos (v2.63.0). En cualquier otra pila de agentes, el 'análisis de datos' es un prompt: el modelo NARRA un agregado, y la narración es infalsable — un número que nunca se calculó, sobre datos que…"
+---
+
+Pregúntale a un framework de agentes "¿cuántos leads por región?" y mira lo que
+pasa de verdad: las filas se pegan en un prompt (o peor, se le *describen* al
+modelo), y un modelo de lenguaje **narra** un número. La narración es infalsable.
+Nadie recorrió las filas; nadie puede volver a derivar la cifra; el "análisis" es
+una afirmación en prosa. Es el mismo fallo de blanqueo de aserciones
+(v2.53.0/T916) disfrazado de hoja de cálculo.
+
+El plano de datos de axon rechaza el disfraz. La **v2.63.0** convierte los cinco
+verbos del plano de datos en álgebra relacional sobre un motor columnar
+determinista:
+
+## El almacén — `dataspace` (axon-T928)
+
+```
+dataspace Sales {
+    column region: Text
+    column amount: Float
+}
+```
+
+Un dataspace ES su esquema: el catálogo cerrado de tipos (`Text`, `Int`, `Float`,
+`Bool`, `Timestamp`, `Json`) se corresponde uno a uno con disposiciones físicas de
+búfer (mapas de bits de validez — los nulos son estructurales, nunca valores
+centinela; búferes de ancho fijo; búferes de desplazamiento para el ancho
+variable). Un esquema vacío, una columna duplicada o un tipo desconocido son un
+rechazo en compilación. En el despliegue, la declaración se INSTANCIA en el motor.
+Los lotes son inmutables y solo admiten adición — el dual analítico de las filas
+transaccionales de `axonstore`.
+
+## La carga — `ingest` (axon-T929, v2.54.0, v2.52.0)
+
+```
+ingest raw_csv into Sales { format: csv, limits { max_bytes: 1048576, max_rows: 100000 } }
+```
+
+- **Cotas ANTES de parsear** (v2.54.0): la cota de bytes se comprueba contra el
+  flujo en crudo antes de interpretar un solo byte.
+- **Rechazo, no coerción**: un `"not_a_number"` en una columna `Float` rechaza el
+  lote ENTERO, nombrando fila y columna. Un valor ausente es un nulo estructural —
+  la única flexibilidad.
+- **Nacido sin confianza** (v2.52.0): todo lote se sella con
+  `source + sha256 + ingested_at + Untrusted` en el momento de construirse. No
+  puede existir un lote sin sellar.
+- **Un ingest es una ESCRITURA declarada**: un endpoint `method: QUERY` cuyo flow
+  hace ingest se rechaza (axon-T927) — un método seguro no puede añadir estado en
+  el servidor.
+
+## El álgebra — `focus` / `aggregate` / `associate` / `explore` (axon-T930)
+
+```
+focus Sales     { where: "amount >= 100.0", select: [region], as: big }
+aggregate Sales { group_by: [region], compute: [count, sum(amount)], as: by_region }
+associate Sales Accounts using region
+explore Sales   { as: shape }
+```
+
+σ∘π, γ sobre el catálogo cerrado de agregados, join por igualdad con hash (las
+claves NULL nunca casan; un join sin clave es un producto cartesiano y se
+rechaza), y un perfil que describe **la forma, nunca el contenido** (los límites
+de zona de las columnas Text son contenido de fila —un correo, un nombre—, así que
+se suprimen).
+
+La cláusula `where:` es la ÚNICA gramática de filtro del plano de datos que el
+producto ya trae para `retrieve` y `navigate` (v1.30.0): cerrada, con operadores
+en lista blanca, enlaces `${name}` resueltos dentro de literales tokenizados y a
+prueba de inyección por construcción. Se cumple la semántica de SQL: `AND` liga
+más fuerte que `OR`; `= NULL` es "es nulo"; una ordenación contra NULL no casa con
+nada.
+
+## Por qué es rápido Y honesto — es la misma propiedad
+
+Cada lote lleva mapas de zona por columna (`[min, max]` más el conteo de nulos). Un
+lote se salta SOLO cuando el predicado es **demostrablemente** falso sobre sus
+zonas — sólido por construcción (un lote saltado no contiene ninguna fila que
+case; un lote "quizá" se recorre). La poda es *observable*: todo resultado es un
+sobre determinista
+
+```json
+{ "rows": […], "taint": "untrusted", "stats": { "batches_total": 8, "batches_pruned": 5, "rows_scanned": 1200, "rows_matched": 37 } }
+```
+
+y el `taint` es el ínfimo epistémico sobre los lotes del almacén — un agregado
+sobre datos sin confianza **nace sin confianza**; ninguna operación del álgebra
+puede elevar la confianza (elevarla es territorio gobernado por la v2.52.0 y la
+v2.56.0).
+
+## El suelo que falla cerrado
+
+Sin el puerto del motor, los cinco verbos rechazan:
+`MissingDependency { name: "dataspace_engine" }` — la misma postura que `mint` y
+`rotate`, literalmente: un descuelgue hacia el LLM ALUCINARÍA un token portador,
+una rotación o —aquí— tus datos. axon no le pide a un modelo de lenguaje que finja
+haber cargado tus filas.
+
+## La prueba en el despliegue
+
+La clase PCC **`DataspaceSchemaSoundness`** vuelve a derivar axon-T928 y
+axon-T930 desde la IR almacenada (entrando recursivamente en `if`/`for`/`par`/
+`warden` — una violación anidada sigue siendo una violación). Un artefacto editado
+a mano que consulte una columna fantasma, cuele un tipo de columna desconocido o
+agregue fuera del catálogo cerrado queda refutado ANTES del despliegue.
+
+## Véase también
+
+- `a_safe_method_is_proven_safe` (v2.62.0) — por qué un `ingest` detrás de QUERY se rechaza.
+- `delivery_is_assertion_egress` (v2.60.0) — el dual de salida: qué abandona el retículo.
+- `effects_are_linear` / `dispatch_vs_cognition` — la disciplina de efectos sobre la que se apoya este plano.
