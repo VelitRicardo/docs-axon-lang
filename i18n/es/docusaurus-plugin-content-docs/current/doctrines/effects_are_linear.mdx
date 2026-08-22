@@ -1,0 +1,104 @@
+---
+title: "Un efecto bajo presupuesto es un recurso lineal — ninguna emisión sin presupuesto (v2.28.0)"
+description: "La ley de que un efecto externo declarado bajo un `budget { rate/max … on Tool(X) }` es un recurso LINEAL: el runtime no puede emitirlo sin consumir un token de un cubo renovable (una cuota `rate:`) o de una ventana fija (una cuota `max:`),…"
+---
+
+Un limitador de tasa atornillado al lado de un programa —un cubo de tokens en
+Redis dentro de un middleware, un estrangulador de Sidekiq, un pool de Airflow—
+es invisible para el sistema de tipos y para el propio razonamiento del
+programa. El programa *cree* que puede llamar a una herramienta; un contador
+externo, en otro sitio, a veces dice que no. La v2.28.0 mete ese contrato DENTRO
+del lenguaje: un efecto bajo un `budget` es un recurso lineal que el compilador
+ve y que el runtime coimpone.
+
+> **La ley.** Un efecto externo declarado bajo un `budget { … on Tool(X) }` es un
+> **recurso lineal**. El runtime no puede emitirlo sin **consumir un token**; la
+> sobreemisión es **imposible por construcción**. Token presente ⇒ adelante
+> (consumir); token ausente ⇒ `block` / `defer` / `shed` según `on_exhausted` —
+> nunca una emisión por encima del presupuesto.
+
+## Por qué es lineal (la disciplina afín, con recarga)
+
+El kernel de lease/reconcile ya implementa recursos afines para manejadores
+*dentro de un flow*: un `LeaseToken` es de un solo uso y decae a lo largo de τ —
+lo adquieres y es tuyo hasta que expira, y entonces desaparece. La v2.28.0
+generaliza ese token a un **`RateLease`** para *efectos externos*:
+
+- Una **cuota `rate:`** es un cubo de tokens de capacidad `limit` que se recarga
+  con `limit` tokens por periodo (de forma continua, `limit/period` por segundo).
+  Permite una ráfaga de hasta `limit` y después un ritmo constante. Se recarga,
+  pero está acotada — nunca más de `limit` en vuelo.
+- Una **cuota `max:`** es una ventana fija: como mucho `limit` consumos por
+  periodo, y el contador solo se reinicia cuando la ventana rueda. Un tope duro,
+  sin recarga dentro de la ventana.
+
+Las dos mantienen la invariante de linealidad que tiene el token afín: **un token
+consumido no está hasta que se recargue**. La diferencia con el token de lease es
+solo la recarga —de un solo uso pasa a N usos—, no la disciplina. Es el mismo
+álgebra afín del pilar de Lógica, aplicada en la frontera donde el programa toca
+el mundo en vez de en un manejador interno.
+
+## Por qué es determinista
+
+Una decisión de presupuesto es una función pura. Los tokens disponibles del cubo
+son `min(capacity, prior + elapsed × rate)`; la disponibilidad de la ventana es
+`limit − consumed`, y rueda cuando `now − window_start ≥ period`. La recarga es
+PEREZOSA —se calcula desde el tiempo de reloj transcurrido en cada adquisición—,
+así que el veredicto nunca depende de la granularidad de un tick de fondo. Dado
+el mismo `(estado del cubo, now)`, `acquire` produce la misma concesión o
+denegación, y el mismo estado posterior, bit a bit. Cada concesión y cada
+denegación son, por tanto, reproducibles y auditables: una llamada por encima del
+presupuesto no falló "probablemente" — se puede demostrar que nunca llegó a
+emitirse.
+
+## Las políticas de agotamiento — todas honestas
+
+Cuando no hay token, el `on_exhausted` del daemon decide, dentro de un catálogo
+cerrado:
+
+- **`block`** (el valor por defecto, que falla cerrado) — el step falla con el
+  tipado `EffectQuotaExhausted` (`axon-E0810`). La llamada no se emite.
+- **`defer`** — el tick se reprograma al primer instante en que se libere un
+  token (`EffectDeferred`, `axon-E0811`), reutilizando el ledger de aplazamientos
+  fusionados de la v2.27.0. El trabajo se conserva, ni se pierde ni se
+  sobreemite.
+- **`shed`** — al mejor esfuerzo: la llamada se salta, el flow continúa y el
+  salto queda auditado (`effect:shed`) — nunca en silencio.
+
+Ninguna de las tres emite por encima del presupuesto. Solo se diferencian en qué
+le pasa al *resto* del trabajo, no en si el presupuesto se sostiene.
+
+## Qué prohíbe esto
+
+- **Ninguna emisión sin presupuesto.** Una herramienta bajo un `budget` no puede
+  llamarse sin un token. No hay ningún camino en el despachador que emita el
+  efecto esquivando la compuerta.
+- **Nada de limitación meramente orientativa.** El presupuesto no es un contador
+  que el programa pueda consultar e ignorar; la compuerta de despacho consume o
+  deniega antes del efecto, así que el límite es estructural, no una sugerencia.
+- **Ningún exceso silencioso con una sola réplica.** El kernel en proceso es
+  exacto. (El enlace multirréplica de la edición enterprise es honesto sobre su
+  cota —como mucho N, con una pequeña ventana de exceso, y falla abierto ante un
+  error de Redis— y lo dice; no afirma una entrega distribuida exactamente-una-vez
+  que no puede cumplir.)
+
+## Relación con las demás leyes
+
+- Generaliza la disciplina afín del kernel de lease, de los manejadores dentro de
+  un flow a los efectos externos — la misma linealidad, ahora en la frontera.
+- Es la hermana en tasa de efectos de
+  [`time_is_an_explicit_input`](axon://logic/time_is_an_explicit_input): esa ley
+  hace que *cuándo* se ejecuta un efecto sea una función pura de entradas
+  registradas; esta hace que *con qué frecuencia* puede ejecutarse sea un recurso
+  lineal. Un `daemon` que declara a la vez una `window` y un `budget` tiene su
+  temporización Y su tasa coimpuestas, de forma determinista.
+- Lleva el espíritu de
+  [`no_unwitnessed_advantage`](axon://logic/no_unwitnessed_advantage): allí, ninguna
+  afirmación sin un testigo comprobable por máquina; aquí, ninguna emisión sin un
+  token consumido — y la prueba `EffectBudgeted` de la v2.28.0 convierte la
+  solidez del presupuesto en un objeto verificable de forma independiente.
+
+La prueba honesta: si tu límite de tasa vive al lado del programa y el programa no
+puede razonar sobre él, tus efectos no son lineales — son esperanzadamente
+acotados. AXON convierte el presupuesto en un recurso que el programa tiene en la
+mano y que el runtime no puede gastar de más.

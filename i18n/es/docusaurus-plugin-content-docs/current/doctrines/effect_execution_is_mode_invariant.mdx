@@ -1,0 +1,113 @@
+---
+title: "Los efectos se ejecutan estructuralmente — con independencia del modo de salida (`navigate` no es…"
+description: "La ley de que un verbo de efecto estructural (`navigate`, `persist`, `mutate`, `retrieve`, `apply: <effect>`, `par`, …) ejecuta su manejador IGUAL tanto si el endpoint transmite en streaming (SSE) como si devuelve una única respuesta JSON. El modo de salida es un…"
+---
+
+Un flow es un grafo de **nodos de efecto**. Algunos nodos son *cognitivos* (un
+paso de razonamiento con LLM — `step … ask:` / `apply: <Tool>`); la mayoría son
+*estructurales* (`navigate` sobre un corpus, `retrieve`/`persist`/`mutate`/`purge`
+sobre un almacén, `remember`/`recall`, `use <Tool>(k=v)`, `par`, control de
+flujo). AXON corre **un solo ejecutor** sobre ese grafo. El **modo de salida** del
+endpoint —un flujo SSE de tokens en vivo frente a una única respuesta JSON
+almacenada— es una elección de *transporte*. **No** cambia qué manejador corre
+para un nodo, ni su resultado.
+
+> **La ley.** Para cada nodo, el manejador de efecto que se ejecuta y el valor que
+> produce son **idénticos** en todos los modos de salida. El streaming y el
+> no-streaming solo se diferencian en *cuándo llegan los bytes al cliente* (token
+> a token en vivo frente a todo de golpe), nunca en *qué se ejecutó*.
+
+## Por qué esto es una ley y no un detalle de implementación
+
+`navigate <corpus>` es un **recorrido estructural de grafo** (EPR con signo y
+paseo ε-informativo sobre el grafo MDN). Es un efecto puro: dadas las filas del
+corpus, devuelve de forma determinista los documentos visitados. **El backend de
+LLM le es irrelevante.** Un flow que es *solo*
+
+```text
+flow Ltm(query: String) -> Docs {
+  navigate KnowledgeGraph from query     # structural — no model involved
+  return navigate.output
+}
+```
+
+debe ejecutar el recorrido y devolver exactamente los documentos que el grafo
+contiene — en **ambos** casos, en un endpoint `transport: sse` y en uno que
+devuelve JSON a secas. Si el corpus está vacío, el resultado honesto es **vacío**.
+
+### El fallo que esta ley prohíbe
+
+El error que esta página existe para evitar: un ejecutor que maneja los verbos
+estructurales en *un* modo (digamos, streaming) pero que, en el *otro*, se
+descuelga hacia una completación genérica de LLM. Entonces un `navigate` sobre una
+base **vacía** no devuelve "ningún documento" — el modelo, al que se le entrega el
+prompt, **fabrica** aciertos de aspecto plausible. Eso es una alucinación
+producida por un ejecutor condicionado por el transporte, y viola dos pilares a la
+vez:
+
+- **Filosofía (honestidad epistémica)** — a un flow de efecto puro no puede
+  responderle jamás un kernel estocástico. Vacío entra ⇒ vacío sale; el runtime no
+  inventa evidencia.
+- **Lógica (determinismo de los efectos)** — el mismo programa sobre el mismo
+  almacén debe producir el mismo recorrido con independencia de cómo se enmarquen
+  los bytes en el cable.
+
+## Corolarios
+
+1. **Un flow sin ningún nodo cognitivo nunca llama al modelo.** Si todos los nodos
+   son estructurales, no se consulta ninguna clave de backend; el "backend de LLM"
+   no participa. (Contrasta con `apply: <Tool>` y `step … ask:`, que *sí* son
+   cognitivos por construcción — véase `axon://logic/dispatch_vs_cognition`.)
+
+2. **`par` es genuinamente concurrente en todos los modos.** Un bloque `par { … }`
+   despliega sus ramas concurrentemente como efectos; bajo streaming, los eventos
+   de las ramas se multiplexan (cada uno lleva la clave de su rama) en vez de
+   serializarse en un orden falso. La *concurrencia* es la semántica; el
+   *entrelazado en el cable* es su reflejo honesto, no una carga de reensamblado
+   para el cliente escondida tras una fachada determinista.
+
+3. **La procedencia y lo epistémico también son invariantes al modo.** El linaje
+   de auditoría que emite un flow (`provenance_events`, `blame_attribution`, el
+   sobre epistémico) se deriva del programa y de la ejecución, no del enmarcado —
+   así que es el mismo tanto si el cliente hizo streaming como si consultó por
+   sondeo.
+
+4. **El fallo también se reporta de forma invariante al modo.** Cuando el efecto
+   de un nodo *aborta* el flow —un `persist`/`mutate`/`purge` que no supera una
+   compuerta previa a la escritura (un `confidence_floor` epistémico, un error de
+   resolución o de conexión con el almacén), un error del backend—, el runtime
+   **nombra el nodo que falla, lo registra y hace aflorar la causa a quien
+   llama**, de forma idéntica en todos los modos. Un endpoint en streaming emite un
+   `FlowError` que nombra `persist into '<store>': <cause>`; un endpoint sin
+   streaming lleva el MISMO detalle nombrado en su sobre (la ranura `error`). El
+   modo de fallo prohibido es el dual del de la fabricación: un endpoint sin
+   streaming que presente el aborto de un nodo como un `success:false`
+   **silencioso**, con resultado vacío y sin diagnóstico — quien llama no puede
+   distinguir una respuesta vacía legítima de un fallo de escritura tragado. La
+   honestidad epistémica corta por los dos lados: el runtime ni inventa evidencia
+   que no tiene ni esconde un fallo con el que se topó. (Una degradación *blanda*
+   reportada EN el camino de éxito —una brecha de anchor que el flow decidió
+   sobrepasar— es otra superficie distinta, `blame_attribution`; un aborto *duro*
+   tiene su propia ranura `error`.)
+
+## Cómo pensarlo
+
+En términos de sistema operativo: el flow es un proceso; sus nodos de efecto son
+llamadas al sistema. Que leas la salida del proceso con `read()` como flujo en
+vivo o que te la tragues de un buffer no cambia qué llamadas hizo el proceso ni
+qué devolvieron. El ejecutor de AXON es el kernel; el modo de salida es el
+descriptor de archivo por el que elegiste leer.
+
+> Elige `transport: sse` cuando quieras los tokens en vivo; elige una respuesta
+> almacenada cuando quieras una sola carga. Nunca esperes que la elección cambie
+> la respuesta. Si un verbo estructural parece comportarse distinto entre modos,
+> eso es un bug del runtime, no una característica del transporte.
+
+## Véase también
+
+- `axon://logic/dispatch_vs_cognition` — el *otro* eje: una LLAMADA estructural a
+  herramienta (`use`) frente a delegación cognitiva (`apply:`). Esta página trata
+  de que los efectos son **invariantes al modo**; aquella trata de **llamada
+  frente a cognición**.
+- `axon://primitives/corpus` — `navigate <corpus>` y la superficie del grafo MDN
+  (`corpus from axonstore`, `relations:`, `adaptive:`).

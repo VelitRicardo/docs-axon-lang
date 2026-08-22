@@ -1,0 +1,128 @@
+---
+title: "Toda guardia es satisfacible — la ley de CapabilityGrantability (`π`, axon-T891)"
+description: "El dual de completitud de every_boundary_is_guarded. Una frontera puede declarar una guardia (requires: [x]) que ninguna autoridad del sistema puede conceder jamás — una puerta cerrada sin llave fabricable, indistinguible en el despliegue de una guardia real. Esta…"
+---
+
+`axon://logic/every_boundary_is_guarded` demostró que toda frontera de confianza
+*declara* una guardia. Esta página es su obligación compañera, la silenciosa: que
+esa guardia se pueda *abrir* de verdad.
+
+> **Toda capacidad que una frontera exige debe ser concedible a través del sistema
+> de autoridad, y el runtime debe proyectar las autoridades que tiene un principal
+> al espacio de nombres de los requisitos de forma total y sólida.** Un
+> `requires: [x]` cuya `x` ninguna autoridad puede conceder es una frontera MUERTA
+> —declarable pero nunca satisfacible— y se rechaza fallando cerrado
+> (`axon-T891`).
+
+Una guardia que puedes declarar pero nunca satisfacer no es una guardia. Es una
+puerta cerrada sin llave — y en el momento del despliegue es *indistinguible* de
+una real. La petición simplemente devuelve 403 para siempre, y quien opera lo
+descubre en producción. La v2.45.0 convierte la existencia de la llave en una
+obligación de prueba, el dual exacto de la regla de permisos muertos de la
+v2.44.0: la v2.44.0 prohíbe un permiso que ninguna frontera usa; la v2.45.0
+prohíbe un requisito que ninguna autoridad concede.
+
+## Por qué hacía falta: dos espacios de nombres que nunca se encontraron
+
+Una autoridad tiene dos representaciones en un plano de control real, y se
+separaron con el tiempo:
+
+- El catálogo RBAC del **plano de control** usa dos puntos: `flow:execute`,
+  `tenant:update`. Los roles se corresponden con estos; `authorize()` los
+  comprueba.
+- La gramática `requires:` del **plano de datos** usa puntos: `flow.execute`,
+  `a.b.c`. La compuerta de despacho comprueba el conjunto de capacidades del
+  portador contra estos.
+
+Nada los unía. Un usuario con el rol que concede `flow:execute` no podía
+satisfacer jamás `requires: [flow.execute]` — cadena distinta, sin normalización.
+Así que la compuerta `requires:`, abandonada a sí misma, devuelve 403 a toda
+petición: la puerta está guardada por una cerradura cuya llave el sistema de
+autoridad no sabe tallar.
+
+## `π` — la proyección que los reconcilia
+
+La ley se apoya en una proyección total e inyectiva `π` desde el catálogo de
+autoridad hacia el espacio de nombres canónico de capacidades (el de los puntos):
+
+```
+π(resource:action) = resource.action        # colon perm ↦ canonical cap
+π(store.platform_read) = store.platform_read # already canonical ↦ identity
+```
+
+- **Total** — toda autoridad bien formada del catálogo tiene imagen canónica; la
+  acuñación que proyecta las autoridades de un principal nunca falla sobre un
+  conjunto válido.
+- **Inyectiva sobre el catálogo de un solo dos puntos** — el único punto de `r.a`
+  solo puede venir del único dos puntos de `r:a`, así que dos autoridades
+  distintas nunca colapsan en una capacidad. Una colisión cruzada genuina (un
+  permiso con dos puntos que se proyecta sobre una capacidad reservada con punto)
+  se *detecta y se rechaza*, nunca se resuelve en silencio — un espacio de nombres
+  fracturado es un agujero.
+
+El conjunto de capacidades de un principal es
+`π(roles→perms ⊕ concesiones de cuenta de servicio ⊕ derivadas de plataforma)`; la
+compuerta de despacho `requires ⊆ π(authorities)` es entonces satisfacible
+exactamente por las autoridades pensadas para abrir esa frontera. `π` no crea
+autoridad — hace que la *representación* de la autoridad que se tiene coincida con
+la *representación* que la frontera exige.
+
+## Qué rechaza la ley
+
+```text
+axonendpoint Write { method: POST path: "/write" execute: Persist requires: [tenant.write] }
+```
+
+Si el catálogo concede `tenant:update` pero no `tenant:write`, entonces
+`tenant.write` no está en la imagen de ninguna autoridad. La compuerta de
+despliegue rechaza:
+
+> `axon-T891`: `requires: [tenant.write]` is not grantable — no authority in the
+> catalog grants it (a dead boundary, declarable but never satisfiable;
+> `every_requirement_is_grantable`).
+
+## Qué lo demuestra frente a dónde vive
+
+- **La obligación PCC** (`PropertyClass::CapabilityGrantability`) vuelve a derivar
+  desde la IR el conjunto `requires:` de todo el programa, REPROYECTA el catálogo
+  de autoridad a través de `π` (recomprobando que no haya dos autoridades que se
+  fracturen en una sola capacidad) y refuta un requisito muerto — sin fiarse nunca
+  de una lista de concedibles precalculada.
+- **La concedibilidad necesita un catálogo de autoridad**, y el sistema de
+  autoridad es el RBAC de la edición enterprise. Por eso `axon-T891` es una
+  refutación de compuerta de despliegue y de prueba, no un error de compilación
+  del OSS puro: el OSS puro no tiene roles ni permisos — sus capacidades
+  `requires:` vienen del IdP de quien lo adopta, así que el conjunto concedible se
+  suministra, no es intrínseco. La edición enterprise aporta su catálogo RBAC vivo
+  y regula el despliegue.
+
+## Superior a lo que hay en el sector
+
+Los sistemas de IAM (AWS, GCP, RBAC de Kubernetes) descubren una política
+insatisfacible en el momento de la petición — o nunca. AXON demuestra, *antes de
+que la superficie se monte*, que todo ámbito que exige es concedible por alguna
+autoridad. Un ámbito muerto es un error de build, no un 403 en producción.
+
+## Los cuatro pilares
+
+| | Toda guardia es satisfacible |
+|---|---|
+| **Matemática** | `π` es una función total e inyectiva; la concedibilidad es el predicado decidible de subconjunto `requires ⊆ π(catálogo)` |
+| **Lógica** | el veredicto de concedibilidad es una obligación de prueba — recomprobable contra el artefacto (PCC `CapabilityGrantability`), no algo que se le crea al compilador |
+| **Filosofía** | un requisito que el sistema de autoridad no puede satisfacer no es "seguridad estricta", es una frontera muerta sin justificar; la llave tiene que existir demostrablemente |
+| **Computación** | un requisito muerto es una refutación en la compuerta de despliegue (`axon-T891`); no es desplegable, ni en silencio ni de otro modo |
+
+## Por qué existe esto
+
+La mentira más cara sobre la autorización es **"más estricto es más seguro"**. Un
+ámbito `requires:` que nada puede conceder *parece* seguridad máxima — hasta que
+toda petición devuelve 403 y el equipo debilita la superficie entera, presa del
+pánico, para restaurar producción. AXON se niega a dejarte publicar una guardia
+cuya llave no existe: demuestra que el requisito es concedible, o no despliega.
+
+## Véase también
+
+- `axon://logic/every_boundary_is_guarded` — la ley hermana (declara la guardia); esta demuestra que la guardia se puede abrir.
+- `axon://logic/every_granted_authority_projects` — el cuantificador converso en el principal: la llave que sí se talla tiene que girar la cerradura (el cierre de autoridades muertas).
+- `axon://logic/no_unwitnessed_advantage` — el mismo reflejo de compilador honesto aplicado a las afirmaciones de ventaja.
+- `axon://primitives/scope` — el sobre de autorización obligatorio dentro del que corre un `warden`.

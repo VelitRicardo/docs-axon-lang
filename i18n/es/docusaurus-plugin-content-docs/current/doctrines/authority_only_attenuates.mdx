@@ -1,0 +1,75 @@
+---
+title: "Delegar es atenuar — la autoridad fluye hacia abajo, nunca hacia arriba (v2.46.0)"
+description: "La ley que gobierna la acuñación de credenciales efímeras (`credential` + `mint`, v2.46.0): un principal puede acuñar un portador que lleve SOLO capacidades que él mismo tiene (`grants ⊆ capabilities(minter)`), y solo por menos tiempo que su propio horizonte (TTL ≤…"
+---
+
+El escenario canónico de adopción: un SaaS incrusta un widget de chat en
+cualquier origen de terceros. El widget necesita identidad — pero todo portador
+existente es el equivocado para un navegador: una cuenta de servicio (v2.46.0)
+es de vida larga y amplia; un JWT de usuario pertenece a una persona. Lo que el
+widget necesita es una **rodaja** de la autoridad del backend: `[chat.invoke]`,
+durante quince minutos, y nada más.
+
+> **La ley.** Una acuñación se admite solo cuando
+> `grants ⊆ capabilities(minter)`. La vida del portador está acotada por un techo
+> cerrado (24 h — `axon-T894`). El principal acuñado no tiene autoridad para
+> acuñar (profundidad 1, estructural). La autoridad fluye HACIA ABAJO por la
+> cadena de delegación — nunca hacia arriba, nunca de lado.
+
+## Tres capas, todas fallan cerrado
+
+1. **Compilación.** Un contrato que no concede nada está muerto (`axon-T893`);
+   un TTL que no se puede parsear, que es cero o que supera el techo de lo
+   efímero se rechaza (`axon-T894`); un `mint` de un contrato no declarado se
+   rechaza (`axon-T895`); un enlace de acuñación que fluye hacia una carga de
+   `persist` se rechaza (`axon-T896` — las credenciales se muestran una vez, no
+   se almacenan nunca).
+2. **Verificación y despliegue.** La prueba `CredentialAttenuation` vuelve a
+   derivar cada contrato y cada punto de acuñación desde la IR compilada — un
+   artefacto rancio o editado a mano que cuele una acuñación fantasma o una
+   credencial "efímera" de una semana queda REFUTADO antes de montarse. La
+   compuerta de despliegue de la edición enterprise compone con la v2.45.0: toda
+   concesión declarada debe ser *concedible* (`⊆ π(catálogo de autoridad)`) — no
+   puedes desplegar un flow que acuñe capacidades muertas.
+3. **Momento de la acuñación.** El manejador de despacho comprueba
+   `grants ⊆ held_capabilities` cuando la petición lleva un portador; el puerto
+   `CredentialMinter` lo vuelve a comprobar de forma independiente (seguro por sí
+   solo) y RECHAZA cuando no hay contexto de capacidades del que atenuar. Si no
+   hay ningún puerto de acuñación configurado ⇒ un error ruidoso de dependencia
+   ausente — nunca un stub silencioso, nunca un token alucinado.
+
+## Por qué atenuación y no emisión
+
+Una API de emisión ("crea un token con los ámbitos X") es un peligro de
+amplificación: quien la alcance acuña autoridad arbitraria. La atenuación
+invierte la postura — el punto de acuñación solo puede entregar hacia abajo un
+subconjunto de lo que demostrablemente tiene, así que lo peor que puede filtrar
+un flow de arranque comprometido es su propia autoridad, y acotada en el tiempo.
+Combinado con el `budget` de la v2.28.0 (atribución de coste por visitante) y el
+`cors` de la v2.38.0 (la mitad del origen de navegador), el escenario del widget
+se puede expresar de punta a punta en código tipado y atestado por PCC.
+
+## Relación con las demás leyes
+
+- **El tercer acto de la historia de la autoridad**:
+  [`every_boundary_is_guarded`](axon://logic/every_boundary_is_guarded)
+  (v2.44.0 — toda frontera declara una guardia) →
+  [`every_requirement_is_grantable`](axon://logic/every_requirement_is_grantable)
+  (v2.45.0 — toda guardia es satisfacible) → **esta ley** (v2.46.0 — la autoridad
+  se puede entregar hacia abajo, pero solo atenuada, solo brevemente y solo de
+  forma demostrable).
+- La cuenta de servicio de la v2.46.0 es el dual de vida larga: identidad de
+  máquina acuñada por un administrador, con concesiones de catálogo. `credential`
+  no puede alcanzar esa forma a propósito (el techo de 24 h) — una credencial que
+  sobrevive a un día es una cuenta de servicio disfrazada.
+- **El dual de entrada**:
+  [`rotation_without_revelation`](axon://logic/rotation_without_revelation)
+  (v2.48.0) gobierna la autoridad que un tercero NOS presta — una credencial
+  prestada se custodia, se renueva en custodia (`rotate`) y no se puede leer
+  nunca, igual que un portador acuñado no se persiste jamás (`axon-T896`). Juntas,
+  las dos leyes cierran el perímetro: ninguna autoridad —propia o prestada—
+  existe como dato en el espacio de cognición.
+
+La prueba honesta: si un trozo de código puede producir un portador cuya
+autoridad excede lo que a ese código se le concedió, tu delegación es
+amplificación. AXON rechaza ese programa.

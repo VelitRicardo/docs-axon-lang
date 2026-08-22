@@ -1,0 +1,91 @@
+---
+title: "Toda frontera tiene guardia — la ley de AuthorizationCoverage (`public: true`)"
+description: "La ley transversal de que ningún endpoint puede despachar un flow a través de una frontera de confianza sin declarar una disciplina de autorización que lo cubra (requires / shield / compliance) O el descarte explícito y auditable `public: true`. Una frontera…"
+---
+
+Todo `axonendpoint` que nombra un flow en `execute:` está, implícitamente,
+abriendo una puerta: una petición que cruza la red alcanza cómputo real. Casi
+todo el sector guarda esas puertas con una cadena de middleware — un interceptor
+que alguien tiene que acordarse de cablear, y cuya *ausencia* es invisible. AXON
+no. Esta página es la ley.
+
+> **Ningún endpoint puede despachar un flow a través de una frontera de confianza
+> salvo que esté cubierto por ≥1 disciplina de autorización (`requires:` /
+> `shield:` / `compliance:`) O declare el descarte explícito `public: true`.** Una
+> frontera sin cubrir por omisión silenciosa es un error de compilación — nunca
+> un valor por defecto.
+
+Es el mismo reflejo de compilador honesto que
+`axon://logic/no_unwitnessed_advantage` (no afirmes lo que no puedes demostrar) y
+`axon://logic/dispatch_vs_cognition` (no finjas determinismo), aplicado a la
+frontera de confianza: **la *ausencia* de guardia tiene que ser una decisión
+deliberada y atestiguada, no un accidente.**
+
+## El descarte es justo el asunto
+
+Los endpoints públicos son legítimos — un health check, un receptor abierto de
+webhooks. La ley no los prohíbe; prohíbe que sean *silenciosos*.
+
+```text
+axonendpoint Health { method: GET path: "/healthz" execute: Ping public: true }
+```
+
+`public: true` es un descarte de **cobertura**, no un puenteo de autenticación —
+la autenticación de transporte de la plataforma es otro asunto. Declara, de forma
+auditable: "esta frontera no lleva, a propósito, ninguna compuerta de capacidad,
+shield o cumplimiento". Si omites AMBAS cosas —una disciplina que cubra y
+`public: true`—, `axon check` falla:
+
+> `axon-T890`: axonendpoint 'Api' dispatches a flow but declares no authorization
+> coverage (no `requires:`, no `shield:`, no `compliance:`) and is not marked
+> `public: true` — an unguarded boundary (`every_boundary_is_guarded`).
+
+## Qué demuestra el compilador frente a qué impone la compuerta de despliegue
+
+- **`axon check` demuestra la cobertura en el código** (`axon-T890`): todo
+  endpoint que despacha está cubierto o es explícitamente público. Esto
+  generaliza la regla de cobertura κ de shield de la sección 6.1, de los *tipos
+  regulados* a *toda frontera*.
+- **La compuerta de despliegue la vuelve a derivar de forma independiente**
+  (`PropertyClass::AuthorizationCoverage`, una prueba PCC): el runtime de la
+  edición enterprise refuta una IR precompilada cuyo endpoint esté sin cubrir, así
+  que la regla se sostiene incluso si se esquivó la verificación de tipos del
+  código fuente. Una frontera sin guardia no puede llegar a producción por
+  ninguna puerta.
+
+## Completitud, no solo por arista
+
+La ley llega más allá del endpoint. Sus hermanas cierran las demás aristas de
+confianza — la salida (`publish within <Shield>`, obligatorio), el análisis
+adversario (`warden(t) within <Scope>`, obligatorio), la autonomía programada
+(`daemon:run` regula el montaje), la ejecución de herramientas (`destructive`
+fuerza confirmación). La afirmación de completitud de la doctrina es que
+**ninguna autoridad reservada es letra muerta**: todo permiso de RBAC tiene un
+punto de llamada donde se impone, o está explícitamente justificado. Una guardia
+declarada pero nunca invocada es teatro — y el teatro es un agujero.
+
+## Los cuatro pilares
+
+| | Toda frontera tiene guardia |
+|---|---|
+| **Matemática** | la cobertura es una función total sobre el grafo de fronteras del programa — toda arista que despacha se corresponde con ≥1 disciplina o con un descarte explícito |
+| **Lógica** | el veredicto de cobertura es una obligación de prueba — recomprobable contra el artefacto (PCC `AuthorizationCoverage`), no algo que se le crea al compilador |
+| **Filosofía** | la *ausencia* de autoridad debe declararse; una puerta sin gobierno no está "abierta por defecto", está sin justificar |
+| **Computación** | la comprobación es un error de compilación más una refutación en la compuerta de despliegue; una frontera sin guardia no es desplegable, ni en silencio ni de otro modo |
+
+## Por qué existe esto
+
+La mentira más cara de un plano de control es **"alguien habrá cableado la
+guardia"**. Una ruta sin comprobación de capacidad, un permiso declarado pero no
+impuesto en ningún sitio, una superficie de seguridad cuya guardia falla cerrada
+pero *cuya puerta nunca se colgó* — cada una es un agujero que se lee como
+cobertura hasta que una auditoría lo encuentra. AXON convierte la guardia en una
+*propiedad de cobertura del lenguaje*: no te deja desplegar una frontera sin
+guardia creyendo que está protegida, y hace que todo descarte deliberado lo diga
+en voz alta.
+
+## Véase también
+
+- `axon://logic/no_unwitnessed_advantage` — la ley hermana del compilador honesto (demuestra la afirmación).
+- `axon://primitives/shield` — la disciplina de cobertura para flujo de información y cumplimiento.
+- `axon://primitives/scope` — el sobre de autorización obligatorio dentro del que corre un `warden`.

@@ -1,0 +1,123 @@
+---
+title: "Toda autoridad concedida está viva — el cierre de autoridades muertas de la ley de concedibilidad"
+description: "La segunda mitad de every_requirement_is_grantable. La v2.45.0 demostró que toda guardia declarada es satisfacible por ALGUNA autoridad del catálogo; esta ley demuestra la dirección conversa en el principal: toda autoridad realmente concedida a un…"
+---
+
+`axon://logic/every_requirement_is_grantable` demostró que toda guardia que una
+frontera declara puede abrirla *alguna* autoridad del catálogo. Esta página es la
+obligación conversa, situada en el principal en vez de en el catálogo:
+
+> **Toda autoridad realmente concedida a un principal debe proyectarse al espacio
+> de nombres donde se impone y estar viva en cada compuerta que la nombre.** Una
+> autoridad concedida que ningún punto de imposición puede ver es una autoridad
+> MUERTA —asignable pero inerte— y el sistema debe hacer ese estado
+> irrepresentable en la escritura, o degradarlo con un testigo explícito en la
+> lectura. Nunca en silencio.
+
+## El fallo dual que la ley hermana no cubría
+
+La ley de concedibilidad pregunta: *para este requisito, ¿existe una llave en el
+catálogo?* Cuantifica sobre el **catálogo**. Pero quedaba abierto un segundo
+cuantificador, sobre el **principal**: *cuando una llave se talla de verdad y se
+le entrega a alguien, ¿gira la cerradura?*
+
+Un sistema puede pasar la primera comprobación y fallar la segunda. El catálogo
+dice que `tenant:update` es concedible; alguien que opera crea un rol
+personalizado, le engancha `tenant:update`, se lo asigna a una cuenta de
+servicio — y el punto de imposición nunca lee esa tabla. El rol es visible en
+todos los sitios donde la autoridad se *escribe* (aparece en listados, se asigna,
+se audita) e invisible en todos los sitios donde la autoridad se *lee*. Toda
+petición devuelve 403. En la consola, la concesión parece real; en la compuerta,
+no existe.
+
+Ese estado —**autoridad declarable pero inerte**— es una mentira silenciosa en el
+almacén de autoridad, exactamente igual de cara que el requisito muerto que
+refleja: quien opera lo "arregla" debilitando la superficie entera (`public: true`
+por todas partes) porque el camino estricto visiblemente no funciona.
+
+## La ley, en tres costuras
+
+1. **Derivación, no acuñación.** La autoridad efectiva de un principal se deriva
+   del estado vivo de autoridad *en el momento de la verificación* —la unión de
+   las expansiones de sus roles integrados y de sus filas de roles personalizados
+   almacenadas, cerrada bajo la herencia de roles— y nunca se cuece dentro de una
+   credencial en el momento de acuñarla. Revocar un rol, o desenganchar un permiso
+   de él, surte efecto en la siguiente petición dentro de una ventana acotada de
+   obsolescencia. Un token de vida larga no puede sobrevivir a una revocación.
+
+2. **Proyección total con descartes explícitos.** La proyección `π`, elevada a un
+   conjunto de autoridades en posesión, es total: toda autoridad bien formada
+   proyecta; una malformada (una fila manipulada o heredada) se **descarta con un
+   testigo** —un registro estructurado que nombra la fila y el motivo—, nunca se
+   traga en silencio. Si falla el propio resolutor, el sistema subaproxima: menos
+   autoridad, nunca más, y nunca una caída.
+
+3. **Rechazo en la escritura.** La superficie de escritura del almacén de
+   autoridad rechaza un permiso que no esté en el catálogo o que no proyecte. La
+   autoridad muerta no se detecta más tarde — es que no se puede representar a
+   través de la API. Las filas escritas *rodeando* la API (SQL directo, deriva de
+   migraciones) caen en la costura 2: no confieren nada, y lo dicen alto.
+
+## Qué rechaza la ley
+
+```
+role dashboard_writer          # custom role, tenant-scoped
+  += tenant:update             # catalog permission, attached
+assign dashboard_writer → SA   # granted
+
+PATCH /…  requires: [tenant.update]   → 403   # the gate never read the role
+```
+
+Bajo la ley, esta traza es imposible: o bien se rechaza el enganche (el permiso no
+proyecta), o bien la compuerta ve `π({tenant:update}) = {tenant.update}` en el
+conjunto de capacidades del principal y admite la petición. No hay un tercer
+estado donde la concesión exista y la compuerta esté ciega ante ella.
+
+## Corolario: la autoridad nunca viaja en un claim
+
+Si la autoridad efectiva se *deriva*, entonces un claim que transporte cadenas de
+autoridad con forma de catálogo es o bien redundante o bien un intento de
+escalada. La ley, por tanto, clausura el canal: las entradas del espacio de
+nombres del catálogo que vengan en un claim controlado por quien adopta se
+eliminan en la verificación para los principales humanos — la ÚNICA fuente de
+autoridad en forma de dos puntos sobre un principal es la propia derivación en el
+momento de verificar. (Las concesiones de máquina se validan al crear la
+credencial y están exentas; los principales efímeros tienen exactamente su rodaja
+de concesión atenuada, `axon://logic/authority_only_attenuates`.)
+
+## Superior a lo que hay en el sector
+
+Keycloak y Auth0 resuelven los roles personalizados — hacia **el token, en el
+momento de acuñarlo**, así que una revocación espera a la expiración. Los motores
+de IAM evalúan la política en vivo pero descubren un enganche de política inerte
+solo a base de sondear 403. Esta ley exige las dos mitades a la vez: derivación
+viva (la revocación surte efecto en la siguiente petición) *y* una garantía
+comprobable por máquina de que una autoridad concedida llega a todo punto de
+imposición — con el conjunto vigente en el momento de imponer inspeccionable por
+el portador (`whoami`), de modo que "qué puedo hacer ahora mismo" sea una petición
+y no una sesión forense.
+
+## Los cuatro pilares
+
+| | Toda autoridad concedida está viva |
+|---|---|
+| **Matemática** | la autoridad efectiva es un cierre (unión de roles ∘ herencia ∘ π); π elevada a conjuntos es total; la vivacidad es `E(p) ∪ π(E(p)) ⊆ capabilities(p)` |
+| **Lógica** | los dos cuantificadores cierran el cuadro: ∀ requisito ∃ autoridad (v2.45.0) ∧ ∀ autoridad concedida ∀ compuerta, la compuerta la ve (v2.47.0) |
+| **Filosofía** | un almacén de autoridad que escribe lo que las compuertas no leen es documentación disfrazada de seguridad; el almacén debe ser la única fuente viva de verdad |
+| **Computación** | rechazo en la escritura (422) + derivación en la verificación bajo una caché acotada + testigos de descarte; el fallo del resolutor degrada hacia MENOS autoridad, nunca hacia más |
+
+## Por qué existe esto
+
+La mentira más cara sobre la autoridad es **la concesión que no lo es**. Pasa toda
+revisión —el rol existe, los permisos están enganchados, la asignación queda
+auditada— y falla solo en la compuerta, en silencio, con un 403 indistinguible de
+una denegación correcta. Los equipos responden de la única forma que permite una
+mentira silenciosa: dejan de confiar en el mecanismo y debilitan la superficie.
+AXON cierra el estado en vez de eso: una autoridad concedida proyecta de forma
+demostrable, o la concesión misma se rechaza con un testigo exacto.
+
+## Véase también
+
+- `axon://logic/every_requirement_is_grantable` — la ley hermana (la llave existe en el catálogo); esta demuestra que la llave tallada gira la cerradura.
+- `axon://logic/every_boundary_is_guarded` — el primer lado del triángulo: la cerradura existe.
+- `axon://logic/authority_only_attenuates` — la delegación entrega hacia abajo una *rodaja* de autoridad viva; la atenuación presupone que la autoridad del que acuña está viva.
