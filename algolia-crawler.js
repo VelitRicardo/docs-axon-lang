@@ -30,9 +30,20 @@ new Crawler({
   startUrls: ['https://www.ricardovelit.com/axon-docs'],
   sitemaps: ['https://www.ricardovelit.com/axon-docs/sitemap.xml'],
 
-  // El origen de Vercel sirve el mismo contenido y NO debe indexarse: dos
-  // orígenes con el mismo texto parten los enlaces y ensucian el índice.
-  exclusionPatterns: ['**/*.vercel.app/**'],
+  // El crawler de Algolia IGNORA toda URL que redirija — no la sigue, la
+  // descarta. Con `cleanUrls` cada ruta con barra final redirige, así que toda
+  // URL que se le dé tiene que ser terminal. Por eso `startUrls` va sin barra.
+  // (La home aparece en el sitemap como `/axon-docs/`, que redirige y se
+  // descarta; se indexa igual porque es la URL de arranque.)
+
+  exclusionPatterns: [
+    // El origen de Vercel sirve el mismo contenido y NO debe indexarse: dos
+    // orígenes con el mismo texto parten los enlaces y ensucian el índice.
+    '**/*.vercel.app/**',
+    // La página de resultados del buscador no es contenido.
+    'https://www.ricardovelit.com/axon-docs/search',
+    'https://www.ricardovelit.com/axon-docs/es/search',
+  ],
 
   discoveryPatterns: [
     'https://www.ricardovelit.com/axon-docs',
