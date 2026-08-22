@@ -16,7 +16,7 @@ cinco pasos que solo puedes dar tú, porque requieren cuentas.
 | Config del crawler | ✅ `algolia-crawler.js`, con la faceta de idioma |
 | Estilos del modal de búsqueda | ✅ mapeados a nuestros tokens |
 | Proyecto en Vercel | ✅ `docs-axon-lang`, producción en `master` |
-| Rewrite desde `ricardovelit.com` | ⬜ **tú** |
+| Rewrite desde `ricardovelit.com` | 🟡 snippet confirmado, falta desplegarlo |
 | `seal-axon.dev` | ⬜ **tú** |
 | Claves de Algolia | ⬜ **tú** |
 | Retirada de Mintlify | ⬜ **tú**, y en último lugar (§11.5 del plan) |
@@ -37,9 +37,22 @@ por el rewrite y desindexe el canónico.
 
 `cleanUrls` no es opcional aquí. Con `trailingSlash: false` el build escribe
 `quickstart.html` pero el HTML enlaza `/axon-docs/quickstart`; sin `cleanUrls`
-Vercel devuelve 404 en toda página que no sea la home. Comprobado contra el
-deployment: `/quickstart` 404, `/quickstart.html` 200. **Requiere redesplegar**
-para que surta efecto.
+Vercel devuelve 404 en toda página que no sea la home.
+
+**Verificado en el deployment tras arreglar el `vercel.json`:**
+
+| Ruta | Antes | Ahora |
+|---|---|---|
+| `/quickstart` | 404 | **200** |
+| `/es/quickstart` | 404 | **200** |
+| `/reference/primitives/persona` | 404 | **200** |
+| `X-Robots-Tag` en el origen | ausente | **noindex** |
+| `canonical` | — | `ricardovelit.com/axon-docs/quickstart` |
+
+El archivo tenía `\.` escrito con una sola barra, que **no es un escape válido
+en JSON**: Vercel descartaba el documento entero y se perdían `cleanUrls` y la
+cabecera a la vez. No rompía el build — rompía el despliegue, en silencio y solo
+en producción. Ahora hay un paso de CI que parsea el archivo.
 
 ## 2 · El rewrite, en el proyecto de `ricardovelit.com`
 
@@ -93,10 +106,16 @@ El sitio ya trae buscador; esto lo sustituye por uno con Ask AI.
 3. En Vercel, variables de entorno del proyecto de la doc:
 
    ```
-   ALGOLIA_APP_ID=...
-   ALGOLIA_SEARCH_API_KEY=...   # la de SOLO BÚSQUEDA — es pública por diseño
-   ALGOLIA_INDEX_NAME=axon-docs
+   ALGOLIA_APP_ID=...           # falta: 10 caracteres, arriba en API Keys
+   ALGOLIA_SEARCH_API_KEY=...   # la de SOLO BÚSQUEDA — pública por diseño
+   ALGOLIA_INDEX_NAME=...       # confirmar el nombre exacto del índice
    ```
+
+   **De las cuatro claves que expone Algolia, el sitio solo necesita una.** La
+   de búsqueda viaja en el bundle de JavaScript: es pública por diseño y no
+   puede hacer nada salvo consultar. Las de Analytics, Usage y Monitoring son
+   claves de lectura con ámbito de cuenta que esta doc no usa nunca — no deben
+   salir de Algolia ni entrar en este repo.
 
    Con las tres definidas, el build usa Algolia; sin ellas, índice local. No hay
    que tocar ningún archivo.
