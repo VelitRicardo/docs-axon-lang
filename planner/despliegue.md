@@ -10,13 +10,13 @@ cinco pasos que solo puedes dar tú, porque requieren cuentas.
 | Pieza | Estado |
 |---|---|
 | `url` + `baseUrl` de subdirectorio | ✅ en `docusaurus.config.ts` |
-| `vercel.json` del proyecto de la doc | ✅ noindex por host + `cleanUrls` |
+| `vercel.json` del proyecto de la doc | ✅ `cleanUrls`; el noindex pasó a robots.txt |
 | Búsqueda funcionando | ✅ índice local, EN y ES |
 | Conmutación a Algolia | ✅ por variables de entorno, sin tocar código |
 | Config del crawler | ✅ `algolia-crawler.js`, con la faceta de idioma |
 | Estilos del modal de búsqueda | ✅ mapeados a nuestros tokens |
 | Proyecto en Vercel | ✅ `docs-axon-lang`, producción en `master` |
-| Rewrite desde `ricardovelit.com` | 🟡 snippet confirmado, falta desplegarlo |
+| Rewrite desde `ricardovelit.com` | ✅ desplegado y verificado |
 | `seal-axon.dev` | ⬜ **tú** |
 | Claves de Algolia | ⬜ **tú** |
 | Retirada de Mintlify | ⬜ **tú**, y en último lugar (§11.5 del plan) |

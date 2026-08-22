@@ -608,20 +608,31 @@ Tres detalles que, si se pasan por alto, cuestan un día de depuración:
 1. **`baseUrl: '/axon-docs/'` no es opcional.** Es lo que hace que los assets, el
    router y los enlaces internos resuelvan bajo la ruta reenviada. Con `/` el
    sitio carga a medias y falla en subrutas.
-2. **El origen `*.vercel.app` no debe indexarse — pero el `noindex` NO puede ser
-   incondicional.** Un rewrite de Vercel *proxea la respuesta con sus cabeceras*:
-   un `X-Robots-Tag: noindex` global en el proyecto de la doc viajaría también
-   por `ricardovelit.com/axon-docs/*` y **desindexaría el sitio canónico entero**.
-   La cabecera va condicionada por host en `vercel.json`:
+2. **El origen `*.vercel.app` no debe indexarse — y la cabecera NO es la forma.**
+   Esto se escribió mal en la v0.4 y el error llegó a producción. La versión
+   corregida, medida:
 
-   ```json
-   { "source": "/(.*)",
-     "has": [{ "type": "host", "value": "(?<sub>.*)\\.vercel\\.app" }],
-     "headers": [{ "key": "X-Robots-Tag", "value": "noindex" }] }
-   ```
+   Un `X-Robots-Tag: noindex` condicionado por host **no funciona detrás de un
+   rewrite**. La condición `has: host` se evalúa en el **destino**, donde el
+   host es siempre el de Vercel — así que casa siempre, la cabecera se emite
+   siempre, y el proxy la devuelve tal cual sobre el dominio canónico.
+   Verificado en producción el 2026-08-22: `ricardovelit.com/axon-docs/quickstart`
+   respondía `X-Robots-Tag: noindex`. El sitio entero pedía no ser indexado
+   desde su dominio bueno.
 
-   Modo de fallo seguro: si el patrón no casa, no se emite cabecera y queda el
-   `rel=canonical` de Docusaurus, que ya apunta al canónico.
+   La forma correcta es un **`static/robots.txt` con `Disallow: /`**. Un
+   rastreador solo lee el robots.txt de la **raíz de cada host**: el del
+   canónico es el del sitio principal, intacto; este solo lo ve quien rastree
+   `docs-axon-lang.vercel.app` directamente. No hay forma de que viaje por el
+   rewrite, porque nadie lo pide a través de él.
+
+   La protección contra contenido duplicado sigue siendo el `rel=canonical`,
+   que Docusaurus emite apuntando al dominio del autor en cada página.
+
+   **La lección:** un mecanismo escrito para prevenir un fallo puede ser el
+   fallo. Lo que separó una cosa de la otra fue medirlo en producción con
+   `curl -I`, no releer el plan.
+
 3. **Algolia rastrea el canónico**, nunca el `.vercel.app`, o el índice devolverá
    URLs que el usuario no debería ver.
 
