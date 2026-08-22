@@ -1,0 +1,21 @@
+# robots.txt del ORIGEN de Vercel — no del sitio publicado.
+#
+# El sitio canónico es https://ricardovelit.com/axon-docs/, servido por un
+# rewrite desde el proyecto del autor. Un rastreador solo lee el robots.txt de
+# la RAÍZ del host: para el canónico eso es ricardovelit.com/robots.txt, que
+# pertenece al sitio principal y no se ve afectado por este archivo.
+#
+# Este archivo solo lo lee quien rastree docs-axon-lang.vercel.app directamente,
+# que es exactamente el origen que no queremos indexado: mismo contenido, otro
+# host, enlaces partidos entre los dos.
+#
+# POR QUÉ NO UNA CABECERA. Antes esto era un `X-Robots-Tag: noindex` en
+# vercel.json, condicionado a que el host terminara en .vercel.app. No funciona:
+# la condición se evalúa en el DESTINO del rewrite, donde el host SIEMPRE es el
+# de Vercel, así que la cabecera se emitía y el proxy la devolvía tal cual sobre
+# el dominio canónico. Medido en producción: ricardovelit.com/axon-docs/quickstart
+# respondía con noindex. Un archivo por host no tiene ese problema, porque el
+# rastreador nunca lo pide a través del rewrite.
+
+User-agent: *
+Disallow: /
