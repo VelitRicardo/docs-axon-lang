@@ -110,6 +110,27 @@ El nombre del índice se resolvió consultando la API, no preguntando: primero
 respondía solo `ALGOLIA_INDEX_AXON`, y tras renombrarlo, solo `axon-docs`.
 Verificado por API en los dos momentos.
 
+### ⚠ El primer rastreo salió en 0 — causa y arreglo (2026-08-22)
+
+El crawler corrió, no dio ningún error y dejó el índice con **0 entradas**.
+
+**Causa:** el sitio del autor sirve en `www.ricardovelit.com`; el apex hace un
+308 hacia allí. La configuración usaba el apex en `startUrls`,
+`discoveryPatterns` y `pathsToMatch`, así que el crawler seguía la redirección
+hasta `www` y **sus propios patrones dejaban de casar con el host al que había
+llegado**. Descartaba cada página. Silenciosamente.
+
+Y el mismo error estaba en `url` del sitio, así que el `rel=canonical` y las 204
+URLs del sitemap declaraban un host que redirige.
+
+**Arreglado en los dos sitios**, verificado en producción: canonical y sitemap
+declaran `www`. **Hay que relanzar el rastreo** con el `algolia-crawler.js`
+actualizado.
+
+**La lección para la próxima:** un crawler que no encuentra nada no falla — dice
+que terminó. La comprobación de `nbHits > 0` del paso 2 no es burocracia; es lo
+único que distingue «rastreó» de «creyó que rastreó».
+
 ### El orden importa, y es al revés de lo que parece
 
 **NO definas todavía las variables de entorno en Vercel.** Con las tres puestas,
