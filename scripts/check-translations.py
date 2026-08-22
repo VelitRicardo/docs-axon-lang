@@ -43,21 +43,32 @@ def es_traducible(rel: str) -> bool:
 
 
 def limpiar(texto: str) -> list[str]:
-    """Devuelve las líneas de prosa: sin frontmatter, código ni código en línea."""
+    """Devuelve las líneas de prosa: sin frontmatter, código ni citas literales.
+
+    El descarte se hace sobre el DOCUMENTO ENTERO, no línea a línea. En prosa
+    justificada a 80 columnas, tanto el código en línea como una cita se parten
+    a mitad:
+
+        …un `retrieve CrmTokens where "expires_at <
+        now() + interval '10 minutes'"`…
+
+    Un filtro por líneas solo limpia la mitad y denuncia la otra como inglés
+    residual — dos falsos positivos que costaron más que arreglar la causa.
+    """
     texto = re.sub(r"^---\n.*?\n---\n", "", texto, flags=re.S)
     texto = re.sub(r"```.*?```", "", texto, flags=re.S)
+    # Código en línea, aunque envuelva.
+    texto = re.sub(r"`[^`]*`", " ", texto, flags=re.S)
+    # Citas literales: los diagnósticos del compilador se dejan en inglés a
+    # propósito (ver planner/glosario-es.md). Se acota a tres saltos de línea
+    # para que unas comillas desparejadas no se coman media página.
+    texto = re.sub(r"[\"“](?:[^\"”\n]*\n?){0,3}[^\"”\n]*[\"”]", " ", texto)
+
     lineas = []
     for linea in texto.split("\n"):
         # Las tablas suelen ser catálogos de palabras clave: no se traducen.
         if linea.lstrip().startswith(("|", ">", "    ")):
             continue
-        linea = re.sub(r"`[^`]*`", "", linea)
-        # Los diagnosticos del compilador se citan literalmente entre comillas y
-        # se dejan en ingles a proposito (ver planner/glosario-es.md): el lector
-        # los va a ver asi en su terminal. Si no se excluyeran, cada cita seria
-        # un falso positivo permanente, y un verificador que siempre chilla es
-        # un verificador que nadie mira.
-        linea = re.sub(r"[\"“][^\"”]*[\"”]", "", linea)
         if linea.strip():
             lineas.append(linea.strip())
     return lineas

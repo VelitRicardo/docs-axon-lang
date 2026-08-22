@@ -1,0 +1,99 @@
+---
+title: "Rotación sin revelación — los secretos en custodia tienen ciclo de vida, no lectores (v2.48.0)"
+description: "La ley que gobierna el ciclo de vida de la custodia de secretos (`backend: secrets` + `rotate` + `tool { secret: }`, v2.48.0): la vida entera de un secreto —sembrarlo, usarlo, enumerarlo, rotarlo, expirarlo— se completa sin que el valor entre jamás en el espacio de COGNICIÓN…"
+---
+
+El escenario canónico de adopción: un SaaS ejecuta acciones en los CRM que
+conectan sus inquilinos (OAuth). El `access_token` del inquilino expira cada 30
+minutos aproximadamente; el `refresh_token` lo renueva contra el endpoint de
+tokens del proveedor, y el par renovado hay que persistirlo —cifrado— para
+siempre. Alguien tiene que ser dueño de ese bucle. Si el dueño es el flow, el token
+es un `String` en el espacio de cognición: viaja en sobres epistémicos, en
+prompts, en registros, en un `persist` accidental. Si no lo es nadie, quien lo
+adopta se construye un cron por un canal lateral en otro lenguaje y el programa
+miente sobre sus propios efectos.
+
+> **La ley.** Un secreto en custodia es *autoridad*, no *datos*. El programa puede
+> saber **que** un secreto existe, **cuándo** expira y **si** su renovación salió
+> bien — nunca **cuál** es. Los dos únicos morfismos sobre el valor son
+> custodia → intercambio con la herramienta (revelar) e intercambio con la
+> herramienta → custodia (confirmar), ambos mediados por el runtime. Ningún término
+> del lenguaje evalúa a un valor secreto: la revelación es irrepresentable, no
+> desaconsejada.
+
+## Las tres superficies
+
+1. **Enumerar** — `axonstore CrmTokens { backend: secrets  class: crm }` es una
+   vista de metadatos de SOLO LECTURA sobre la custodia del inquilino, con ámbito
+   en una clase declarada (`crm.*`). Su esquema es ley, sintetizado por el
+   compilador: `key`, `version`, `created_at`, `expires_at` — el valor no tiene
+   columna. Un `retrieve CrmTokens where "expires_at < now() + interval '10
+   minutes'"` de un daemon es la fuente ordinaria consciente del tiempo de la
+   v2.21.0.
+2. **Rotar** — `rotate CrmTokens where "…" with RefreshCrmToken as r` renueva cada
+   entrada que case mediante UN intercambio mediado por clave: el runtime revela el
+   valor actual solo HACIA DENTRO de la petición a la herramienta (el sobre
+   reservado `axon_rotation`), la herramienta de quien lo adopta realiza el
+   intercambio con el proveedor y responde `axon_rotated`, y el runtime confirma con
+   CAS en `version + 1` (dos réplicas de un daemon no pueden gastar dos veces una
+   credencial de refresco — la que pierde degrada con un testigo). El enlace recibe
+   `{attempted, rotated, failed}` — metadatos, nada más.
+3. **Usar** — `tool CrmCrearContacto { secret: crm.hubspot }` inyecta el valor por
+   inquilino en la petición al servidor de la herramienta, bajo el campo reservado
+   `axon_secret`, en el despacho. El flow llama a `use CrmCrearContacto(...)` y
+   nunca toca la credencial.
+
+## Tres capas, todas fallan cerrado
+
+1. **Compilación.** Un verbo de escritura contra un almacén de secretos se rechaza
+   (`axon-T897` — la custodia solo la escriben la API de siembra y la confirmación
+   mediada de rotate); un `rotate` de un almacén que no es de secretos
+   (`axon-T898`) o de una herramienta no declarada (`axon-T899`) se rechaza; un
+   almacén de secretos sin clase —que enumeraría el espacio de nombres ENTERO de
+   secretos del inquilino— es irrepresentable (`axon-T900`); un `secret:` que no sea
+   una CLAVE de configuración se rechaza (`axon-T902` — una credencial literal en el
+   código es irrepresentable, la postura de la v2.37.0).
+2. **Verificación y despliegue.** La prueba `SecretCustodySoundness` vuelve a
+   derivar cada almacén de secretos, cada punto de rotación y cada verbo de
+   escritura desde la IR compilada — un artefacto rancio o editado a mano que cuele
+   una herramienta de rotación fantasma, un almacén sin clase o una escritura de
+   custodia queda REFUTADO antes de montarse.
+3. **Despacho.** Si no hay puerto de custodia configurado ⇒ un error ruidoso de
+   dependencia ausente en todas las superficies (nunca un stub silencioso, nunca un
+   descuelgue hacia el LLM — un resumen de rotación alucinado sobre una custodia
+   intacta es exactamente la mentira que esta ley existe para impedir). Una
+   herramienta que porta un secreto y no tiene custodia NO llama a su proveedor sin
+   autenticar — el despacho falla con un testigo.
+
+## El perímetro honesto
+
+El servidor de herramientas de quien lo adopta SÍ ve el texto en claro — tiene que
+verlo: realiza el intercambio con el proveedor y la llamada autenticada. Ese es el
+mismo dominio de confianza que ya recibe todo lo que un flow le envía. La ley
+gobierna el espacio de *cognición* — lo que el programa mismo puede nombrar,
+enlazar, almacenar o pronunciar. La disponibilidad degrada hacia MENOS autoridad,
+nunca hacia más: una caída de la custodia significa que nada rota y nada despacha
+autenticado, cada cosa con su testigo tipado.
+
+## Relación con las demás leyes
+
+- **El dual de entrada de
+  [`authority_only_attenuates`](axon://logic/authority_only_attenuates)**
+  (v2.46.0): esa ley gobierna la autoridad que entregamos HACIA ABAJO (una
+  acuñación solo puede atenuar, y el portador no se persiste nunca —
+  `axon-T896`); esta gobierna la autoridad que un tercero NOS presta (una
+  credencial prestada se custodia, se renueva en custodia y no se puede leer
+  nunca). Juntas cierran el perímetro: **ninguna autoridad —propia o prestada—
+  existe como dato en el espacio de cognición.**
+- [`time_is_an_explicit_input`](axon://logic/time_is_an_explicit_input)
+  (v2.27.0/v2.46.0): `expires_at` son metadatos *declarados*, escritos por quien
+  siembra y por la confirmación de la rotación — la expiración alimenta el filtro
+  del daemon, nunca un reloj oculto.
+- `dispatch_vs_cognition` (v2.9.0): el flow decide CUÁNDO rotar (cognición); el
+  runtime realiza el intercambio (despacho). El verbo existe precisamente para que
+  esa separación sea estructural.
+
+La prueba honesta: si algún programa expresable puede imprimir un secreto en
+custodia, tu almacén de secretos es una base de datos con pasos de más. AXON
+rechaza ese programa en compilación, lo refuta en el despliegue y lo deniega en el
+despacho.

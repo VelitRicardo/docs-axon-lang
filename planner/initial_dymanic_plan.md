@@ -1,6 +1,6 @@
-# AXON Docs — Plan Vivo (v0.14)
+# AXON Docs — Plan Vivo (v0.15)
 
-> **Estado:** F5 EN CURSO — corpus migrado · iterable · 14 de 16 cerradas — solo quedan D4 y D6,
+> **Estado:** F5 COMPLETA · en F6 · iterable · 14 de 16 cerradas — solo quedan D4 y D6,
 > que son recomendaciones aplicadas salvo objeción y no bloquean nada
 > **Última revisión:** 2026-08-21
 > **Regla del documento:** este archivo es la única fuente de verdad del proyecto
@@ -671,7 +671,7 @@ el gasto; cancelar del todo es lo único irreversible.
 | **F2** ✔ Tokens | `tokens.css` completo + mapeo `--ifm-*` + modo oscuro + tipografía self-hosted | cambiar 3 variables cambia todo el sitio; contraste AA verificado |
 | **F3** ✔ Theme | swizzles (Navbar, Footer, DocItem, CodeBlock, TOC) + componentes §7 + landing | landing publicable, cero hex fuera de tokens |
 | **F4** ✔ Sintaxis | gramática Prism `axon` + tema de código | los dos fixtures se ven correctos |
-| **F5** Contenido | bloques 1 y 2 del §5 (Empezar + Lenguaje) escritos | alguien ajeno escribe y ejecuta su primer agente solo con la doc |
+| **F5** ✔ Contenido | bloques 1 y 2 del §5 (Empezar + Lenguaje) escritos | alguien ajeno escribe y ejecuta su primer agente solo con la doc |
 | **F5b** Capacidades | plugin generador desde `capabilities.toml` + gate de CI (§5.6) | toda capacidad del catálogo tiene página; ninguna URL del compilador 404 |
 | **F5c** Frontera | bloque 5: verificar vs. certificar, tabla open-core, `/licensing`, flujos de red, continuidad | un comité de compras entiende qué compra sin ver un precio |
 | **F6** Calidad | lint de tokens, enlaces, snippets verificados, a11y, OG images | CI verde en PR |
@@ -828,6 +828,17 @@ Keywords de trabajo: `axon-lang`, `cognitive runtime`, `cognitive OS`,
 
 ## 16. Registro de iteraciones
 
+- **v0.15 · 2026-08-21** — **F5 completa. D17 cerrada: 30/30 páginas, 23.754
+  palabras en español**, el 21% del corpus, tal y como se dimensionó. Las 22
+  doctrinas traducidas en cuatro bloques agrupados por familia conceptual, para
+  que el vocabulario compartido quedara estable por construcción.
+   fija las decisiones; 
+  y  las verifican y entran en el gate de F6.
+  Dos correcciones al verificador, ambas por causa raíz y no por excepción:
+  los diagnósticos citados literalmente no son inglés residual, y el filtrado
+  tiene que hacerse sobre el documento entero porque el código en línea y las
+  citas se parten a 80 columnas. Verificado que el arreglo no lo ciega: con un
+  párrafo en inglés inyectado a propósito, lo caza.
 - **v0.14 · 2026-08-21** — **Primer tramo de traducción: 5 páginas, 2.605
   palabras** (Empezar + La idea) — el 11% del subconjunto de D17. Reglas
   aplicadas: no se traduce ni una palabra clave del lenguaje (`shield`, `flow`,

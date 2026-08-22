@@ -1,0 +1,94 @@
+---
+title: "Todo predicado de control de flujo o de datos es una expresión total y pura (v2.26.0)"
+description: "La ley de que toda expresión que AXON evalúa para control de flujo o como predicado de datos —una condición `if` y, de forma incremental, los valores de `let` y las cláusulas `where:`— es TOTAL (siempre termina), PURA (sin efectos secundarios, sin E/S) y estáticamente…"
+---
+
+AXON separa con nitidez dos clases de trabajo: la **cognición** (un paso de
+razonamiento con LLM — `step … ask:`, `apply: <Tool>`) y el **despacho** (todo lo
+mecánico que el runtime decide por su cuenta). La doctrina
+[`axon://logic/dispatch_vs_cognition`](axon://logic/dispatch_vs_cognition) dice
+que lo mecánico nunca debe disfrazarse de cognitivo. La v2.26.0 vuelve eso
+**ejecutable** en el único sitio por donde se colaba: decidir el control de flujo.
+
+Antes de la v2.26.0, una comprobación elemental como *"¿hemos hecho demasiadas
+llamadas?"* —`recent.length >= limit`— no tenía forma nativa. Quien lo adoptaba
+tenía que echar mano de `use Tool(...)` o de un paso con LLM para contar y
+comparar. Ese es exactamente el antipatrón que `dispatch_vs_cognition` condena:
+un cómputo determinista y total disfrazado de cognición, pagando latencia, coste
+y no determinismo por hacer aritmética.
+
+> **La ley.** Toda expresión que AXON evalúa para control de flujo o como
+> predicado de datos es un valor **total, puro y sin efectos secundarios** en un
+> sublenguaje **cerrado y con tipado estático**. Siempre termina; no toca E/S, ni
+> almacén, ni modelo; su tipo se comprueba en `axon check` contra el ámbito del
+> flow. Una expresión constante la **decide el compilador**; una dinámica la
+> evalúa el runtime de forma determinista — nunca un LLM.
+
+## Por qué es total (decidible por construcción)
+
+La gramática de expresiones (v2.26.0) es un **catálogo cerrado**: literales,
+referencias, aritmética (`+ - * / %`), comparación (`== != < <= > >=`), booleanos
+(`and`/`or`/`not`), los builtins de colección y cadena (`.length`, `.count`,
+`.is_empty`, `.is_null`, `.contains`, `.starts_with`, `.ends_with`) y el acceso a
+campo o índice (`.field`, `[i]`). **No hay recursión**, **no hay funciones
+definidas por el usuario** y **no hay bucle sin cota** — la iteración es el `for`
+a nivel de flow, acotado por la cardinalidad de una colección, nunca una
+expresión. Así que toda expresión es un plegado finito sobre su árbol sintáctico:
+la terminación es estructural, no una esperanza en ejecución.
+
+Esto es **el pilar de Lógica vuelto ejecutable**. Un fragmento total y puro es
+exactamente la parte de un programa sobre la que un compilador puede razonar por
+completo:
+
+- **Plegado de constantes.** Cuando todas las hojas son literales, el compilador
+  evalúa la expresión en `axon check`. `if 2 + 2 == 4 { … }` se decide a `true`; la
+  rama `else` está muerta estáticamente. AXON emite **`axon-W008`** ("condition is
+  always true/false — the `{branch}` branch is unreachable"), así que una condición
+  constante se caza como aviso de linter, no se publica como código muerto.
+- **Tipado estático.** La expresión se tipa contra el ámbito del flow (parámetros
+  y, de forma incremental, enlaces de `let` y salidas de steps). Un predicado
+  incoherente en tipos es un error de compilación, no una sorpresa en ejecución:
+  `axon-T810` (aritmética no numérica), `axon-T811` (comparación incompatible),
+  `axon-T812` (`and`/`or`/`not` no booleanos), `axon-T813` (aridad de un builtin),
+  `axon-T814` (receptor o argumento de un builtin). Una referencia de tipo estático
+  desconocido queda permisiva — el compilador se inclina al silencio, nunca a un
+  falso positivo.
+
+## Por qué es pura (determinista en ejecución)
+
+Una condición se evalúa con una única función total sobre el ámbito enlazado. Lee
+valores; no escribe nada. No puede persistir, mutar, recuperar, navegar, llamar a
+una herramienta ni invocar a un modelo. La aritmética entera es exacta; el
+desbordamiento y la división por cero **fallan cerrado** (no se toma la rama) en
+vez de dar la vuelta o entrar en pánico. La misma expresión sobre el mismo ámbito
+produce el mismo valor, bit a bit — la precondición de la reproducción y de la
+auditoría.
+
+## Qué prohíbe esto
+
+- **Nada de cognición en una condición.** La decisión de una rama nunca llama a un
+  LLM. Si una decisión necesita juicio de verdad, eso es un `step` cuya salida
+  tipada lee una condición posterior — la cognición es explícita y auditada, no
+  escondida dentro de un `if`.
+- **Nada de efectos secundarios en un predicado.** Una expresión no puede cambiar
+  el estado. Los efectos son los verbos estructurales (`persist`, `mutate`,
+  `navigate`, …), secuenciados como nodos del flow — nunca colados dentro de un
+  booleano.
+- **Nada de no terminación.** No hay ninguna construcción en la gramática de
+  expresiones que pueda iterar o recurrir, así que ninguna condición puede colgar
+  el runtime.
+
+## Relación con las demás leyes
+
+- Generaliza
+  [`dispatch_vs_cognition`](axon://logic/dispatch_vs_cognition): esa ley dice *no
+  finjas determinismo con un LLM*; esta da la superficie determinista que hay que
+  usar en su lugar.
+- Refleja en espíritu a
+  [`no_unwitnessed_advantage`](axon://logic/no_unwitnessed_advantage): allí, una
+  afirmación sin respaldo comprobable por máquina degrada; aquí, un cómputo con
+  forma total y comprobable nunca se delega a la cognición.
+
+La prueba honesta: si una comprobación es una función finita de valores que ya
+tienes, es una **expresión**, y AXON la calcula — total, puramente y bajo la
+mirada del verificador de tipos.

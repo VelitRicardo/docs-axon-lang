@@ -1,0 +1,85 @@
+---
+title: "Los datos abiertos se navegan totalmente; una forma declarada es una lente, nunca una mentira (v2.26.0)"
+description: "La ley de que los datos semiestructurados —un valor `Json`— se navegan TOTALMENTE (todo camino `.field`/`[i]` termina en un valor tipado; un campo ausente, una base con tipo equivocado o un índice fuera de rango resuelven a nulo-como-valor, nunca a un pánico, nunca…"
+---
+
+La prueba de honestidad más dura de AXON son los datos que **no** controla: un
+webhook en crudo, la carga de una API que evoluciona, la salida estructurada de
+un LLM. Eso son datos semiestructurados —un valor [`Json`](axon://primitives/json)—
+y son inherentemente inciertos: el campo puede faltar, el tipo puede haber cambiado
+desde la semana pasada, el modelo puede emitir algo malformado. Acceder a
+`doc.field` es una **creencia** epistémica, no un hecho.
+
+Cualquier otra pila resuelve esa incertidumbre de forma deshonesta. El `jsonb` de
+Postgres devuelve `NULL` ante un camino equivocado igual que ante un nulo presente
+— indistinguibles, en silencio. Un lenguaje tipado rechaza el documento salvo que
+lo especifiques por completo. Un ORM te entrega un blob y deja que el parseo entre
+en pánico en ejecución. Cada uno o miente (nulo silencioso), o rechaza la realidad
+(esquema rígido), o aplaza el fallo hasta un cuelgue.
+
+> **La ley.** Un valor semiestructurado es navegable **totalmente**: todo camino
+> `.field` / `[i]` termina en un valor tipado; un fallo —campo ausente, base con
+> tipo equivocado, base nula, índice fuera de rango— es **nulo-como-valor**, nunca
+> un pánico, nunca divergencia. Y una forma declarada sobre él (`Json<T>`) es una
+> **expectativa comprobable** (una lente): el compilador verifica las navegaciones
+> contra ella, pero **nunca es una garantía que el runtime imponga como mentira**.
+> El compilador puede ayudar; el runtime nunca miente.
+
+## Por qué total (el pilar de Lógica)
+
+`Json` es un tipo suma recursivo; el acceso a campo o índice es su eliminador. La
+v2.26.0 mantiene esa eliminación **total**: navegar es un plegado finito sobre el
+camino, y el caso de ausencia es un *valor* (`null`), no un fallo. Así que
+`doc.a.b.c` sigue caminando a través de un salto que falta, `doc.items[99]` es
+`null` y no un cuelgue, y un campo ausente es honestamente **falso** en una guarda
+— `if doc.tier == "gold"` es *decidiblemente falso*, no un error. Esto es
+exactamente [`axon://logic/total_expressions`](axon://logic/total_expressions)
+extendido de los tipos rígidos a los datos abiertos: la ley de expresiones totales
+cubre ahora los valores más sucios que AXON toca.
+
+## Por qué una lente y no una mentira (el pilar de Filosofía)
+
+Un documento a menudo *debería* tener una forma aunque nada pueda garantizarla.
+`Json<T>` registra esa expectativa con honestidad. El compilador la **comprueba**:
+`profile.age` resuelve a `Int`, así que `profile.age >= 18` pasa la verificación de
+tipos, y `profile.notafield` es **`axon-T842`** — una errata probable cazada
+pronto. Pero la forma es una **expectativa, no una certeza impuesta en ejecución**:
+
+- Un campo declarado pero ausente sigue degradando a `null` en ejecución. El
+  compilador no inserta una comprobación que se cuelgue; el runtime no fabrica el
+  campo. La afirmación estática *guía*, nunca *miente*.
+- La lente se puede quitar. Suelta el `<T>` y navegas el `Json` abierto con
+  libertad — el comportamiento en ejecución es idéntico; solo cambia la ayuda en
+  compilación.
+
+Un tipo estático que el runtime tendría que *fingir* para respetarlo es una
+mentira. Un tipo estático que *comprueba una expectativa mientras el runtime sigue
+siendo total* es ayuda honesta. La v2.26.0 solo trae la segunda clase.
+
+## Qué prohíbe esto
+
+- **Nada de caminos equivocados en silencio.** Un fallo es un *nulo tipado* que
+  puedes comprobar (`.is_null`), no un `NULL` ambiguo que igual podría ser un nulo
+  presente — el programa puede distinguir "ausente" de "presente y nulo".
+- **Nada de pánico ante la deriva de forma.** Un documento que perdió un campo, o
+  ganó otro, o cambió un tipo, no cuelga jamás un flow. Degrada a nulo y los
+  accesores honestos fallan cerrado.
+- **Nada de certeza fabricada.** `Json<T>` nunca se compila a una aserción en
+  ejecución de que el documento *es* `T`. La lente comprueba la expectativa del
+  programa; no coacciona la realidad para que encaje.
+
+## Relación con las demás leyes
+
+- Generaliza [`total_expressions`](axon://logic/total_expressions): esa ley hacía
+  totales los predicados de control de flujo sobre tipos rígidos; esta extiende la
+  totalidad a los datos abiertos y semiestructurados.
+- Lleva la honestidad de
+  [`no_unwitnessed_advantage`](axon://logic/no_unwitnessed_advantage) al sistema de
+  tipos: una afirmación de forma sin respaldo en ejecución se *presenta como* lo
+  que es —una expectativa comprobable—, nunca exagerada como una garantía
+  impuesta.
+
+La prueba honesta: si conoces la forma, declara `Json<T>` y deja que el compilador
+compruebe tus navegaciones; si no la conoces, usa `Json` abierto y navega
+totalmente. En ambos casos un fallo es nulo, nunca un cuelgue — y el runtime nunca
+miente sobre lo que el documento contenía.

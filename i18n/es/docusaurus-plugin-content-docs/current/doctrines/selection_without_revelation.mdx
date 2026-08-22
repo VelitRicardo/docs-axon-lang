@@ -1,0 +1,115 @@
+---
+title: "Selección sin revelación — un flow elige qué autoridad prestada gastar, nunca…"
+description: "La ley que gobierna `tool { secret: <class> secret_partition: <param> }` (v2.49.0), la extensión paramétrica de rotation_without_revelation (v2.48.0). Un inquilino de axon multiplexa a menudo N subinquilinos (un SaaS cuyos clientes…"
+---
+
+La forma canónica de adopción: un inquilino de axon, N subinquilinos de negocio
+multiplexados por un `tenant_id` que viaja como parámetro del flow (un SaaS que
+corre como un único despliegue mientras cada uno de sus clientes conecta su propio
+CRM). La v2.48.0 le dio a ese adoptante la enumeración y la rotación de N
+credenciales prestadas bajo una clase (`crm.hubspot.<sub>` — al barrido de clase le
+da igual el sufijo). Lo que no podía darle era el *consumo*:
+`tool { secret: crm.hubspot }` es una clave ESTÁTICA (`axon-T902`), resuelta contra
+el inquilino de axon y sin acceso al discriminante de ejecución. La herramienta de
+un inquilino podía servir exactamente a un subinquilino.
+
+> **La ley.** Un flow puede *seleccionar* qué autoridad prestada gastar —mediante
+> un discriminante que ya tiene—, pero seleccionar no es revelar. Elegir CUÁL
+> entrada de custodia inyectar nunca evalúa a QUÉ es esa entrada, y nunca amplía la
+> clase que la herramienta puede alcanzar. El valor de la credencial sigue siendo,
+> como en la v2.48.0, algo que ningún término del lenguaje puede nombrar.
+
+## La superficie
+
+```text
+tool CrmCrearContacto {
+  parameters: { tenant_id: String, email: String, name: String }
+  secret: crm.hubspot          # the class key — a compile-time literal
+  secret_partition: tenant_id  # one of THIS tool's own String parameters
+}
+
+flow CreateContact {
+  use CrmCrearContacto(tenant_id = "acme", email = e, name = n)
+  # dispatch resolves custody key `crm.hubspot.acme`, injects its value
+  # under `axon_secret`; the flow never touches the credential.
+}
+```
+
+El `secret:` nombra la clase; `secret_partition:` nombra un parámetro cuyo *valor*
+se convierte en exactamente UN segmento añadido a la clave. La clave resuelta es
+`secret + "." + segmento`. Como el prefijo de clase está fijado en compilación y el
+segmento se valida contra una única tirada de `[a-z0-9_-]` (sin `.` que amplíe el
+prefijo, sin `/` ni `:` que alcancen una URL), la clave resuelta está
+demostrablemente dentro de la clase declarada de la herramienta — la parte dinámica
+es un discriminante, nunca una clase nueva.
+
+## Dos propiedades, ambas estructurales
+
+1. **Sin revelación (rotation_without_revelation, intacta).** La partición
+   selecciona; no lee. El valor sigue viajando solo de la custodia al intercambio
+   con la herramienta, inyectado bajo `axon_secret` en el despacho. Ningún `let`,
+   sobre, prompt o `persist` puede enlazarlo. `secret_partition` es el *nombre de
+   un parámetro*, no un valor — la IR transporta el nombre, nunca una credencial.
+2. **Contención de clase.** El segmento no puede contener un `.`, así que no puede
+   extender el prefijo de clase más allá de su frontera declarada.
+   `secret: crm.hubspot` con cualquier valor de partición solo puede llegar a
+   `crm.hubspot.<seg>` — nunca a `crm.*` en general, nunca a `llm.openai`. El
+   alcance de diputado confundido hacia otra clase es irrepresentable, no
+   simplemente desaconsejado.
+
+## Tres capas, todas fallan cerrado
+
+1. **Compilación (`axon-T903`).** Un `secret_partition:` debe nombrar un parámetro
+   `String` obligatorio de la MISMA herramienta (el discriminante es un argumento
+   que enlaza QUIEN LLAMA en el punto del `use` — nunca estado ambiente, nunca la
+   salida de un LLM, nunca un identificador libre), debe acompañar a un `secret:`
+   (una partición sin clave de clase no selecciona nada) y está prohibido en una
+   herramienta técnica ligada a `target:` (el despacho por argv no tiene cuerpo de
+   petición donde inyectar — la exclusión de `axon-T902` aplicada a su selector).
+2. **Verificación y despliegue.** `SecretCustodySoundness` vuelve a derivar las
+   leyes de partición desde la IR compilada: un artefacto editado a mano que apunte
+   una partición a un parámetro fantasma, a uno que no sea `String` o a una
+   herramienta sin `secret:` queda REFUTADO antes de montarse.
+3. **Despacho.** Una partición cuyo valor enlazado falte, no sea cadena, esté vacío
+   o contenga un carácter fuera de `[a-z0-9_-]` deniega el despacho con un testigo
+   — el programa nunca gasta la credencial del inquilino equivocado y nunca alcanza
+   una clave fuera de su clase. Sin puerto de custodia ⇒ el mismo error ruidoso de
+   dependencia ausente que en todas las superficies de la v2.48.0.
+
+## El perímetro honesto
+
+La ley garantiza que el segmento es un *discriminante acotado y dentro de la
+clase*. NO garantiza que el segmento sea el subinquilino *correcto* — porque axon
+no modela la subinquilinidad de quien lo adopta (la misma regla de pureza que
+mantiene a HubSpot fuera del lenguaje mantiene fuera al `inquilino de negocio`).
+Enlazar `tenant_id` con el usuario final autenticado es la autorización de quien lo
+adopta, resuelta en su capa de E/S a partir de la clave de API o del JWT — la misma
+frontera de confianza que ya decide qué `tenant_id` transporta una petición. Lo que
+añade la v2.49.0 es estrecho y real: sea cual sea el discriminante que elija quien
+lo adopta, el lenguaje hace imposible que ese discriminante revele un valor o
+escape de su clase.
+
+## Relación con las demás leyes
+
+- **La extensión paramétrica de
+  [`rotation_without_revelation`](axon://logic/rotation_without_revelation)**
+  (v2.48.0): la v2.48.0 hizo irrepresentable el valor de la credencial; la v2.49.0
+  hace de la *selección* de una credencial entre N una operación acotada y contenida
+  en su clase — sin reintroducir una forma de leer el valor. La clave estática de la
+  v2.48.0 es el caso particular sin `secret_partition`.
+- **El espejo de entrada de
+  [`authority_only_attenuates`](axon://logic/authority_only_attenuates)**
+  (v2.46.0): el `mint` de la v2.46.0 selecciona una audiencia a la que entregar
+  autoridad HACIA ABAJO; la v2.49.0 selecciona qué autoridad prestada, cedida por
+  uno de N terceros, se gasta — y ambas se niegan a que la autoridad seleccionada se
+  convierta en datos.
+- `dispatch_vs_cognition` (v2.9.0): el flow decide CUÁL credencial (cognición,
+  mediante un discriminante que tiene); el runtime resuelve e inyecta el valor
+  (despacho). El campo `secret_partition` existe precisamente para que esa
+  separación sobreviva al multiplexado.
+
+La prueba honesta: si algún programa expresable puede, eligiendo una partición,
+imprimir un secreto en custodia O inyectar una credencial de fuera de la clase
+declarada de la herramienta, tu superficie de selección es una lectura encubierta.
+AXON rechaza ese programa en compilación, lo refuta en el despliegue y lo deniega
+en el despacho.

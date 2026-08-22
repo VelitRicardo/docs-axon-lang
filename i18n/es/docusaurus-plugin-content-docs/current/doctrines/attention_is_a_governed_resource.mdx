@@ -1,0 +1,89 @@
+---
+title: "La atención es un recurso gobernado — notificación humana gobernada (v2.66.0)"
+description: "La ley que gobierna `notify` (v2.66.0), el tercer dual de salida: `deliver` (v2.60.0) escribe en sistemas de registro, `document` (v2.62.0) produce artefactos, `notify` GASTA ATENCIÓN HUMANA — y los tres llevan su linaje o rechazan. Una…"
+---
+
+Cualquier pila puede mandar un SMS. Lo que ninguna pila gobierna es qué cruza
+dentro: una notificación en Python es una cadena más una llamada a Twilio — la
+aserción, su confianza, su procedencia y la condición que la disparó se
+destruyeron antes de enviarla. La persona lee *"ventas bajando"* y **actúa**.
+
+axon trata una notificación por lo que es: **la salida más peligrosa del sistema**
+— la única que interrumpe a una persona y le pide que actúe ahora. La v2.66.0 la
+convierte en el tercer dual de salida:
+
+> `deliver` escribe en sistemas de registro · `document` produce artefactos ·
+> **`notify` gasta atención humana** — y los tres llevan su linaje o rechazan.
+
+```
+notify LowSales {
+    channel:    sms
+    to:         secret(ops.oncall_phone)
+    template:   "Ventas 7d: ${resumen}"
+    window:     4h
+    provenance: attached
+    effects:    <web>
+}
+```
+
+## Las tres leyes
+
+**T933 — la barrera de evidencia.** Una conjetura que llega al bolsillo de una
+persona etiquetada como hecho es blanqueo de aserciones en su versión más rápida
+(la hermana de T920, con consecuencias más duras). `cleared` más valores del flow
+⇒ rechazo salvo respaldo explícito. Bajo `attached`, cada valor enlazado cruza CON
+su etiqueta — y una referencia a un sobre de la v2.63.0 añade su línea de
+evidencia:
+
+> *Ventas 7d: $12.4k [computed: 7/1204 rows, taint: untrusted]*
+
+La notificación que explica su propia evidencia. Nadie más tiene esto, porque
+nadie más SIGUE teniendo la evidencia en el momento de enviar.
+
+**T934 — custodia del destinatario.** `to:` solo acepta una referencia de clase
+secreto de la v2.48.0. Un número de teléfono literal en el código es un rechazo de
+compilación que ENSEÑA la forma de custodia. El valor se resuelve en el despacho,
+con ámbito de inquilino, dentro del transductor de la edición enterprise — nunca
+viaja en el código, ni en la IR, ni en los prompts, ni en las filas de auditoría.
+
+**T935 — la ventana obligatoria.** Un `notify` sin `window:` es un canal de
+interrupción sin cota — se rechaza, no se le pone un valor por defecto. El
+como-mucho-una-vez-por-ventana y por destinatario lo impone un ledger duradero
+entre réplicas, y cada supresión es una fila de auditoría atestiguada: **el
+silencio gobernado también rinde cuentas**.
+
+## El disparador no necesita maquinaria nueva
+
+El caso del fundador —*"notificar baja en las ventas"*— es un `daemon` (v2.4.0)
+que corre un flow cuyo `aggregate` (v2.63.0) **calcula** la señal (estadísticas de
+recorrido incluidas), un `if` que enlaza `resumen` solo cuando se cumple el umbral
+declarado, y disparo por resolución: el `notify` se dispara tras la ejecución solo
+si su `${ref}` se resolvió. Una referencia sin resolver es una no-operación
+atestiguada. La evidencia de la alerta es un cómputo, nunca la opinión de un
+modelo.
+
+## La prueba
+
+La PCC **`NotificationProvenanceSoundness`** vuelve a derivar las tres leyes desde
+la IR almacenada en el despliegue — un artefacto editado a mano que blanquee una
+conjetura, quite la ventana o cuele un destinatario literal queda refutado (409). Y
+el runtime falla cerrado de punta a punta: si no hay transductor montado ⇒ un
+rechazo estructurado, nunca una pérdida silenciosa y nunca un "enviado" fabricado.
+
+## Perímetro honesto
+
+axon demuestra disciplina de contenido, higiene del destinatario y gobierno de la
+atención. NO demuestra la entrega del proveedor (una llamada aceptada por una API
+no es un mensaje leído — los acuses son cola declarada), y el consentimiento a
+nivel de destinatario es obligación legal de quien lo adopta en la v1
+(`notify.enabled` es por inquilino y está APAGADO por defecto; la mensajería es
+territorio de consentimiento). Tres canales, plantillas de texto — la frontera es
+el producto, no el catálogo.
+
+## Véase también
+
+- `delivery_is_assertion_egress` (v2.60.0) — el dual del sistema de registro.
+- `analysis_is_algebra_not_conversation` (v2.63.0) — de dónde sale la evidencia
+  que va en la notificación.
+- `rotation_without_revelation` (v2.48.0) — la disciplina de custodia sobre la que
+  viaja la referencia al destinatario.

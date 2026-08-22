@@ -1,0 +1,86 @@
+---
+title: "La garantía de entrega declarada de un canal se impone, o el programa se señala — nunca…"
+description: "La ley de que la semántica de entrega declarada de un `channel` tipado (`qos` + `persistence`) la IMPONE el runtime, o el programa se señala honestamente — el lenguaje NUNCA declara una entrega que no realiza. El `emit` de un flow…"
+---
+
+Un `channel` tipado declara CÓMO se entregan sus eventos:
+
+```text
+channel SessionHibernated {
+    message:     SessionHibernated
+    qos:         at_least_once          # delivered ≥1×, redelivered until acked
+    persistence: persistent_axonstore   # durable — survives the consumer being down
+}
+```
+
+Antes de la v2.31.0, esa declaración era una **mentira por omisión**: la gramática
+verificaba los tipos de `qos: at_least_once  persistence: persistent_axonstore`,
+pero el runtime no entregaba NADA de eso — el `emit` de un flow se acumulaba en
+proceso y nunca llegaba al `listen` de un daemon, que el supervisor descartaba en
+silencio (la frontera de honestidad `axon-W009` de la v2.4.0 nombraba la carencia).
+Una garantía sin respaldo es exactamente lo que condena
+[`no_unwitnessed_advantage`](axon://logic/no_unwitnessed_advantage).
+
+> **La ley.** La semántica de entrega declarada de un canal (`qos` +
+> `persistence`) **la impone el runtime**, o el programa **se señala
+> honestamente**. El lenguaje nunca declara una entrega que no realiza. Un
+> `emit Channel(payload)` entrega de verdad a un `listen Channel`; un `listen` en
+> un canal que nadie produce se señala, no se queda muerto en silencio.
+
+## Qué significa "se impone" (los pilares de Computación y Lógica)
+
+- **Duradera** — el `emit` de un canal `persistent_axonstore` AÑADE a un buzón de
+  salida duradero (un registro que solo admite adición más un cursor de
+  procesados). El evento sigue siendo reentregable hasta que se acusa, así que un
+  consumidor que estaba CAÍDO cuando se emitió recoge el atraso al volver. (El
+  buzón de salida en Postgres por inquilino, duradero ante caídas, es el sumidero
+  de la edición enterprise; el estándar abierto es la abstracción más la
+  implementación de referencia en memoria.)
+- **Al menos una vez** — un cuerpo entregado que falla se REINTENTA hasta un techo
+  acotado y después va a la COLA DE FALLIDOS (registrado, nunca perdido en
+  silencio, nunca una tormenta de reentregas infinitas — la entrega sigue siendo
+  TOTAL). Un canal `at_most_once` es de mejor esfuerzo por DECLARACIÓN (un intento,
+  descartado si falla) — honesto porque el programa lo pidió así.
+- **Reparto respetado** — `broadcast` entrega a TODOS los oyentes; cualquier otro
+  qos es de consumidor único (dispara un solo oyente). El catálogo de qos
+  SIGNIFICA lo que dice en el camino de entrega.
+- **Reproducible** — cada `emit` (Chan-Output) y cada entrega (Chan-Input)
+  registran un `ReplayToken` (efecto `emit:`/`deliver:<channel>`, el slug
+  determinista `axon.builtin.channel.v1`) en la cadena de auditoría de la v1.4.0.
+  La entrega por canal es mecánica → se reproduce bit a bit.
+
+## Qué significa "señalado, no muerto en silencio" (el pilar de Filosofía)
+
+Una entrega que el runtime NO PUEDE realizar aflora, nunca se esconde:
+
+- Un `listen` de un `daemon` sobre un canal al que **nadie emite** no puede
+  dispararse jamás (espera un evento que ningún productor levanta — el defecto del
+  informe Kivi #39). El compilador lo dice (**`axon-W009`**, el diagnóstico de la
+  v2.4.0 reelaborado: salta justo cuando el canal no tiene productor, y CALLA
+  cuando sí lo hay, porque la v2.31.0 sí entrega), y la compuerta de despliegue lo
+  demuestra de forma independiente (la PCC **`ChannelDeliverySoundness`** refuta un
+  canal consumido sin productor).
+- Es la misma postura que el `axon-W004` de
+  [`axon://logic/dispatch_vs_cognition`](axon://logic/dispatch_vs_cognition) y que
+  la frontera de la v2.4.0: el compilador nunca deja que un programa se apoye en
+  una garantía que el runtime no respalda.
+
+## Relación con las demás leyes
+
+- Es el análogo en entrega de
+  [`effects_are_linear`](axon://logic/effects_are_linear) (un efecto con
+  presupuesto es un contrato lineal que se cumple) y de
+  [`open_data_is_total`](axon://logic/open_data_is_total) (una forma declarada es
+  una expectativa comprobable, nunca una mentira impuesta): cada una generaliza el
+  pilar de honestidad a una superficie nueva — efectos, datos abiertos y ahora
+  entrega de mensajes.
+- Lleva [`no_unwitnessed_advantage`](axon://logic/no_unwitnessed_advantage) al
+  transporte: una garantía de entrega sin respaldo se presenta por lo que es
+  (señalada), nunca exagerada. La fila del buzón de salida, el acuse y el
+  `ReplayToken` son el testigo comprobable por máquina de que el evento se entregó.
+
+La prueba honesta: si un canal declara `at_least_once` / `persistent_axonstore`,
+el runtime realiza esa entrega —de forma duradera, con reintentos y reproducible—
+o el compilador y la compuerta de despliegue te dicen exactamente por qué no puede
+(no hay productor). Una entrega declarada es una promesa cumplida, o es un defecto
+señalado; nunca es una mentira silenciosa.

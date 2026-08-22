@@ -1,0 +1,123 @@
+---
+title: "El tiempo es una entrada explícita y registrada — nunca una lectura ambiente (v2.27.0 planificación ·…"
+description: "La ley de que cualquier decisión que AXON toma sobre CUÁNDO se ejecuta algo —una guarda temporal `window`, un tick aplazado, la reclamación de un daemon planificado— es una función PURA y TOTAL de entradas explícitas: el instante `now` (UTC), la ventana declarada (zona horaria +…"
+---
+
+Un planificador que lee el reloj de pared *dentro* de su decisión es inauditable:
+no puedes reproducir "¿por qué no corrió el trabajo de las 8 el día 24?" porque las
+entradas de esa decisión —la hora actual, la zona horaria operativa, el conjunto de
+festivos, la versión de la base de datos de zonas en vigor— eran ambiente, no
+quedaron registradas. La v2.27.0 hace cierto lo contrario, por construcción, para
+la guarda temporal de AXON: la `window`.
+
+> **La ley.** Toda decisión sobre CUÁNDO se ejecuta algo es una **función pura y
+> total** de **entradas explícitas y registradas**: el instante `now` (UTC), la
+> `window` declarada (zona horaria + tramos de día y hora permitidos + fechas
+> literales de festivo) y la versión de la base de datos IANA de zonas. La decisión
+> no lee nada de forma ambiente; es reproducible solo con esas entradas.
+
+## Las cuatro entradas — todas explícitas
+
+1. **`now` se pasa, no se lee.** La decisión pura `is_in_window(now, window)` toma
+   el instante como argumento. El supervisor lee el reloj una vez, al principio de
+   un tick, y va pasando ese valor — así la lógica se puede probar unitariamente con
+   un reloj fijo y es idéntica entre réplicas que evalúan el mismo minuto.
+2. **La zona horaria es un literal.** `timezone: "America/Bogota"` forma parte del
+   programa, se comprueba de formato en compilación y se resuelve contra la base de
+   datos IANA en ejecución. Un cambio de horario de verano no es un caso especial
+   que tenga que manejar quien lo adopta — la base de datos de zonas lleva el
+   historial de desplazamientos, así que `9..18` local significa de 9 a 18 de reloj
+   de pared a ambos lados del cambio.
+3. **Los tramos y los festivos son literales.** Los rangos de día y hora de
+   `allow:` y las fechas de `exclude:` (`"2026-12-25"`) son texto del programa
+   verificado — con validez de calendario real comprobada en tipos (`axon-T826`: no
+   existe el 30 de febrero). No se descargan, no se infieren, no son políticos. Un
+   *calendario* de festivos con nombre ("festivos federales de EE. UU.") queda
+   deliberadamente **fuera de alcance** precisamente porque sería una entrada
+   ambiente y no determinista — la antítesis de esta ley.
+4. **La versión de la base de zonas queda registrada.** El veredicto de una ventana
+   depende de la base de datos IANA (los desplazamientos y las reglas de horario de
+   verano cambian entre versiones). La auditoría de la ejecución registra la
+   `tz_db_version` que usó la decisión, así que el veredicto es reproducible
+   **incluso a través de una actualización de la base de zonas** — puedes
+   reconstruir exactamente qué reglas estaban en vigor.
+
+## Por qué es pura y total
+
+La decisión es un plegado finito: convertir `now` a la zona horaria de la ventana,
+comprobar la fecha local contra el conjunto de festivos, comprobar el día de la
+semana y la hora locales contra los tramos. Ningún bucle carece de cota, ninguna
+rama llama a un modelo, nada se persiste ni se muta. Una zona horaria que no se
+puede resolver **falla cerrado** (el tick no se dispara) en vez de adivinar. Dados
+los mismos `(now, window, versión de la base de zonas)`, el veredicto es idéntico
+bit a bit — la precondición de la reproducción, de la auditoría y del acuerdo entre
+réplicas.
+
+## Qué prohíbe esto
+
+- **Nada de leer un reloj ambiente dentro de la decisión.** La lógica nunca
+  pregunta por su cuenta "¿qué hora es?"; el instante es un argumento. Una decisión
+  que no puedes volver a correr suministrándole un `now` no es una decisión bajo
+  esta ley.
+- **Nada de zonas horarias ocultas.** La "hora local" sin zona declarada es
+  ambiente y depende de la máquina. La zona siempre es explícita.
+- **Nada de entradas dinámicas sin registrar.** Si una extensión futura obtuviera
+  el conjunto de festivos de forma dinámica (por ejemplo, de un almacén), DEBE
+  registrar el **conjunto resuelto** en la auditoría de la decisión — si no, el
+  veredicto deja de ser reproducible y abandona esta ley. La entrada explícita puede
+  calcularse; nunca puede ser una lectura lateral silenciosa.
+- **Nada de calendarios políticos incrustados.** Las tablas integradas de festivos
+  nacionales no son deterministas entre jurisdicciones ni entre años; no son una
+  entrada explícita y quedan excluidas por diseño.
+
+## v2.46.0 — la culminación cognitiva
+
+La v2.27.0 hizo honesto con el tiempo al *planificador* y dejó ciego al *modelo*:
+un daemon con guarda `window` se dispara exactamente a las 9 de Bogotá y luego
+lanza un prompt a un modelo que no sabe que es lunes. Todo agente en producción que
+planifique, salude o razone sobre "esta semana" o "antes de las 6" necesita la
+fecha y hora actuales — y el apaño popular (interpolar una marca de tiempo del
+servidor dentro del `ask:`) es precisamente la lectura de reloj ambiente, sin
+registrar e ingenua con las zonas que esta ley prohíbe.
+
+La v2.46.0 aplica la misma disciplina de cuatro entradas a la cognición:
+
+1. **Declarado, nunca ambiente.** Un step que transporta tiempo lo dice en el
+   código: `now: "America/Bogota"` en el step, o en el marco `context` enlazado
+   (todo step dentro lo hereda; el `now:` propio de un step lo sobrescribe). La zona
+   se comprueba de formato (`axon-T892`) — declaras EN EL TIEMPO DE QUIÉN corre la
+   cognición.
+2. **Un instante por ejecución.** El runtime captura el reloj UNA vez por ejecución
+   y renderiza ESE instante en cada zona declarada — dos steps de una misma
+   ejecución no pueden discrepar jamás sobre "ahora". El tick de un daemon es una
+   ejecución nueva con captura fresca, que es justo lo correcto.
+3. **Renderizado determinista.** La línea inyectada —
+   `Current datetime: 2026-07-07T14:33:05-05:00 (America/Bogota; tzdb 2025b;
+   captured at run start).` — es una función pura de `(captura, zona, versión de la
+   base de zonas)`. Correcta ante el horario de verano gracias a la misma maquinaria
+   de chrono-tz que usa `window`.
+4. **Registrado para reproducir.** El sobre del flow lleva
+   `temporal_context: {captured_utc, tzdb_version, zones}` (en ambos transportes,
+   con la paridad de la v2.7.0), así que el prompt exacto que vio el modelo es
+   reconstruible byte a byte.
+
+Falla cerrado en todas las capas: una zona malformada es un error de compilación
+(`axon-T892`); una zona con forma válida pero desconocida para la base de datos de
+zonas queda refutada por la prueba `TemporalContextSoundness` en la verificación y
+el despliegue, y hace fallar el step ruidosamente en ejecución — nunca una omisión
+silenciosa del tiempo que el step declaró necesitar.
+
+## Relación con las demás leyes
+
+- Es la instancia en el dominio del tiempo de
+  [`total_expressions`](axon://logic/total_expressions): un predicado temporal es
+  un cómputo total, puro y comprobado estáticamente, no una conjetura delegada.
+- Comparte el espíritu de
+  [`no_unwitnessed_advantage`](axon://logic/no_unwitnessed_advantage): una
+  afirmación (allí, una ventaja; aquí, una decisión de planificación) solo es
+  fiable cuando la respaldan entradas registradas y comprobables.
+
+La prueba honesta: si no puedes reproducir una decisión de planificación a partir
+de valores que escribiste, tu planificador está adivinando. AXON los escribe —
+`now`, la zona, los tramos, los festivos, la versión de la base de zonas — y
+calcula.

@@ -1,0 +1,138 @@
+---
+title: "Un método seguro está DEMOSTRADO seguro — HTTP QUERY (RFC 10008) aquí no es una promesa, es una…"
+description: "La ley que gobierna `method: QUERY` (sección 107). La RFC 10008 (Proposed Standard, junio de 2026) añade QUERY: seguro + idempotente + cacheable, CON cuerpo de petición — el primer método HTTP nuevo en dos décadas, que cierra el 'GET no puede llevar cuerpo /…"
+---
+
+La **RFC 10008** (Proposed Standard, junio de 2026 — Reschke, Snell, Bishop) le da
+a HTTP su primer método genuinamente nuevo en dos décadas:
+
+> **QUERY** — *seguro*, *idempotente*, *cacheable*, **y lleva cuerpo de petición.**
+
+Cierra una carencia que quien escribe APIs lleva años rodeando: `GET` no puede
+llevar cuerpo con seguridad (así que los filtros complejos se apretujan en una URI,
+o se truncan hacia los 8000 caracteres), y `POST` no es ni seguro, ni idempotente,
+ni cacheable (así que todo endpoint de "búsqueda" que hace POST *miente sobre su
+semántica*). QUERY es el método honesto para una lectura compleja.
+
+## La carencia que la RFC no puede cerrar por sí sola
+
+La sección 2 de la RFC 10008 es normativa: una petición QUERY **DEBE** procesarse
+"de forma segura e idempotente". Pero una RFC no puede *imponer* nada. En Express,
+FastAPI, Spring, Rails o axum a secas, un manejador de QUERY puede hacer `INSERT`,
+puede cobrar una tarjeta, puede enviar un correo — y compilará, se desplegará y
+servirá tráfico. Ese DEBE no lo respalda más que la disciplina de quien escribe.
+
+**Y no es una preocupación teórica.** Todo el *valor* de QUERY está en que los
+intermediarios pueden actuar según sus garantías: una CDN puede cachear la
+respuesta, un proxy o un cliente pueden **reintentar** la petición. Están en su
+derecho. Así que un QUERY que escribe no es un desliz de estilo — es un error de
+corrección (escrituras duplicadas al reintentar) y un error de seguridad (una
+petición que muta servida desde una caché, o reproducida a través de ella). El
+ecosistema está a punto de acumular millones de ellos.
+
+> **La ley.** En axon, un método declarado seguro **es** seguro. Un
+> `axonendpoint` con `method: QUERY` cuyo flow enlazado realiza una escritura
+> declarada no compila (`axon-T927`), y la prueba se vuelve a derivar desde la IR
+> almacenada en el despliegue (`QuerySafetySoundness`), así que no se puede editar
+> para hacerla desaparecer. El QUERY de todos los demás es seguro por convención;
+> el de axon lo es por construcción.
+
+## La superficie
+
+```text
+axonstore leads { backend: in_memory }
+
+# A complex read: the filter travels in the BODY (that is why QUERY exists),
+# the flow only READS, and the method's safety is a compile-time fact.
+flow SearchLeads(industry: Text, min_score: Int) -> Unit {
+    retrieve leads { where: "industry = ${industry}" as: hits }
+}
+
+axonendpoint LeadSearch {
+    method:  QUERY            # safe + idempotent + cacheable, WITH a body
+    path:    "/leads/search"
+    execute: SearchLeads
+    backend: stub
+}
+```
+
+Añade una sola escritura y el programa deja de compilar:
+
+```text
+flow SearchLeads(industry: Text) -> Unit {
+    retrieve leads { where: "industry = ${industry}" as: hits }
+    persist into leads { kind: "audit" content: "searched" }   # ← axon-T927
+}
+# axon-T927: axonendpoint 'LeadSearch' declares `method: QUERY`, but its flow
+# 'SearchLeads' performs a declared write (`persist`). RFC 10008 section 2: a QUERY MUST
+# be processed in a SAFE and IDEMPOTENT manner — caches, proxies and clients are
+# entitled to retry and cache it freely, so a QUERY that changes state is a
+# correctness + security bug, not a style choice. Use `method: POST` … .
+```
+
+El rechazo **no se esquiva con indentación** — el recorrido entra recursivamente en
+las ramas de `if`, `for` y `par` y en los cuerpos de `warden`. Una prueba que se
+salta una escritura anidada un nivel no es una prueba.
+
+## Las dos fuentes de escritura que comprueba la ley
+
+1. **El propio cuerpo del flow** — `persist` / `mutate` / `purge` (escrituras de
+   almacén), `emit` / `publish` (salida por canal), `rotate` / `mint` (estado de
+   secretos y credenciales), `transact` (una transacción no pinta nada dentro de un
+   método seguro).
+2. **Una declaración de salida a nivel de programa** — un `deliver` (v2.60.0) o un
+   `document` (v2.62.0) SE DISPARAN para cada flow que corre el ejecutor
+   desplegado, así que un endpoint QUERY en un programa así escribiría una fila de
+   CRM o persistiría un artefacto. Es una regla gruesa, pero sólida bajo la
+   semántica de disparo actual.
+
+## Los comportamientos de servidor de la RFC que axon respeta
+
+- **`Content-Type` es un DEBE** (sección 4): un QUERY lleva cuerpo, así que un tipo
+  ausente es `400` y uno no soportado es `415`.
+- **`Accept-Query`** (sección 5): la respuesta anuncia qué tipos de medio de
+  consulta acepta el endpoint, para que un cliente que descubra la API pueda
+  corregirse solo.
+- **Sin clave de idempotencia.** QUERY es idempotente *por definición* — exigir una
+  clave sería ceremonia redundante (`default_idempotency_on` está apagado, igual
+  que para GET).
+- **CORS no es automático.** La RFC no pone QUERY en la lista segura: un navegador
+  hace preflight, así que quien lo adopta debe listarlo en
+  `cors { allow_methods: [QUERY] }`.
+
+## El perímetro de la prueba (explícito por construcción)
+
+La verificación estática se aplica al código axon — y axon exige que todo alcance
+más allá de sí mismo esté **declarado**. La prueba tiene, por tanto, una frontera, y
+esa frontera es *visible en el código*: el borde de la garantía es él mismo
+explícito.
+
+**Dentro:** toda escritura que axon puede ver se rechaza en compilación y se vuelve
+a demostrar en el despliegue — donde cualquier otra pila no ofrece absolutamente
+nada.
+
+**En el borde:** una `tool` externa es una *suposición* declarada, no un hecho
+verificado. Una `tool { provider: http }` puede hacer POST contra un proveedor, y
+una fila de efecto `network` no distingue una lectura de una escritura. axon no
+ejecuta al proveedor, así que no puede descargar el contrato del proveedor —
+modelar ese contrato *registra* la suposición, no la *demuestra*. (Afirmar lo
+contrario sería exactamente el fallo que esta ley existe para impedir: una garantía
+de seguridad que nadie comprueba.) Rechazar toda herramienta que toque la red
+volvería inútil a QUERY —una consulta de solo lectura a un proveedor es una parte
+legítima y común de una consulta—, así que la ley se detiene en la superficie
+declarada de axon.
+
+Y no es una carencia que quien lo adopta tenga que ir a buscar. Es una línea que
+axon traza *por* él: todo alcance fuera de la prueba está nombrado en el programa.
+En otros sitios la frontera no es solo más débil — es **imposible de localizar**.
+Es el mismo perímetro que trazan la v2.48.0 y la v2.49.0 para los secretos, y
+decirlo con claridad es lo que hace que la parte que sí demostramos merezca
+credibilidad.
+
+## Véase también
+
+- `every_boundary_is_guarded` (v2.44.0) — el dual de autorización de esta ley.
+- `effects_are_linear` / `dispatch_vs_cognition` — el sistema de efectos sobre el
+  que se apoya esta prueba.
+- `delivery_is_assertion_egress` (v2.60.0) — el otro sitio donde axon convierte una
+  convención (la procedencia) en una prueba.
