@@ -13,8 +13,13 @@
  */
 
 new Crawler({
-  appId: 'APP_ID',
+  appId: 'U78MSO2SV3',
   apiKey: 'CRAWLER_API_KEY', // la del crawler, NO la de búsqueda ni la admin
+
+  // NOTA SOBRE EL NOMBRE DEL ÍNDICE. `ALGOLIA_INDEX_AXON` es el nombre de una
+  // variable de entorno, no de un índice — probablemente se creó copiando la
+  // plantilla. Funciona igual, pero si se va a renombrar, ahora es gratis y
+  // después cuesta un recrawl completo. `axon-docs` sería lo natural.
   indexPrefix: '',
   rateLimit: 8,
   maxDepth: 10,
@@ -31,7 +36,7 @@ new Crawler({
 
   actions: [
     {
-      indexName: 'axon-docs',
+      indexName: 'ALGOLIA_INDEX_AXON',
       pathsToMatch: ['https://ricardovelit.com/axon-docs/**'],
       recordExtractor: ({ helpers, url }) => {
         // La faceta de idioma es OBLIGATORIA (plan §9). Sin ella, buscar desde
@@ -65,7 +70,7 @@ new Crawler({
   ],
 
   initialIndexSettings: {
-    'axon-docs': {
+    'ALGOLIA_INDEX_AXON': {
       attributesForFaceting: [
         'type',
         'lang',

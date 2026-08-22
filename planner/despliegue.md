@@ -18,7 +18,7 @@ cinco pasos que solo puedes dar tú, porque requieren cuentas.
 | Proyecto en Vercel | ✅ `docs-axon-lang`, producción en `master` |
 | Rewrite desde `ricardovelit.com` | ✅ desplegado y verificado |
 | `seal-axon.dev` | ⬜ **tú** |
-| Claves de Algolia | ⬜ **tú** |
+| Algolia | 🟡 app ID e índice resueltos; **falta rastrear** (0 registros) |
 | Retirada de Mintlify | ⬜ **tú**, y en último lugar (§11.5 del plan) |
 
 ---
@@ -97,31 +97,61 @@ curl -sI https://ricardovelit.com/axon-docs/assets/css/styles.*.css | head -1
 
 ## 4 · Algolia
 
-El sitio ya trae buscador; esto lo sustituye por uno con Ask AI.
+**Estado medido el 2026-08-22:**
 
-1. Crear el índice `axon-docs`.
-2. Pegar `algolia-crawler.js` en el editor de crawlers y lanzar el primer
-   rastreo. **Después** de que el dominio definitivo responda: reindexar tras
-   cambiar de origen es rehacerlo todo.
-3. En Vercel, variables de entorno del proyecto de la doc:
+| Dato | Valor |
+|---|---|
+| Application ID | `U78MSO2SV3` ✅ |
+| Search API Key | ✅ (pública por diseño, viaja en el bundle) |
+| Índice | `ALGOLIA_INDEX_AXON` ✅ existe |
+| Registros en el índice | **0** ⛔ |
+
+El nombre del índice se resolvió consultando la API, no preguntando: solo
+`ALGOLIA_INDEX_AXON` responde; `axon-docs`, `axon` y `docs-axon-lang` no existen.
+
+### El orden importa, y es al revés de lo que parece
+
+**NO definas todavía las variables de entorno en Vercel.** Con las tres puestas,
+el build cambia a Algolia — y Algolia tiene cero registros. El buscador pasaría
+de funcionar a no devolver nada. Sería un retroceso servido en producción.
+
+La secuencia correcta:
+
+1. **Crear y lanzar el crawler.** Pegar `algolia-crawler.js` en el editor de
+   crawlers de Algolia (ya lleva el `appId` y el nombre del índice reales; solo
+   falta su propia API key, que es distinta de la de búsqueda). El sitio ya
+   responde en su dominio definitivo, así que el crawler tiene qué rastrear.
+
+2. **Comprobar que el índice tiene contenido** antes de tocar nada:
+
+   ```bash
+   curl -s -X POST      "https://U78MSO2SV3-dsn.algolia.net/1/indexes/ALGOLIA_INDEX_AXON/query"      -H "X-Algolia-API-Key: <search-key>"      -H "X-Algolia-Application-Id: U78MSO2SV3"      -d '{"query":"shield","hitsPerPage":3}' | head -c 400
+   ```
+
+   Debe devolver `nbHits` > 0 y aciertos con URLs de `ricardovelit.com/axon-docs/`.
+
+3. **Entonces sí**, las tres variables en el proyecto `docs-axon-lang` de Vercel:
 
    ```
-   ALGOLIA_APP_ID=...           # falta: 10 caracteres, arriba en API Keys
-   ALGOLIA_SEARCH_API_KEY=...   # la de SOLO BÚSQUEDA — pública por diseño
-   ALGOLIA_INDEX_NAME=...       # confirmar el nombre exacto del índice
+   ALGOLIA_APP_ID=U78MSO2SV3
+   ALGOLIA_SEARCH_API_KEY=<la de solo búsqueda>
+   ALGOLIA_INDEX_NAME=ALGOLIA_INDEX_AXON
    ```
 
-   **De las cuatro claves que expone Algolia, el sitio solo necesita una.** La
-   de búsqueda viaja en el bundle de JavaScript: es pública por diseño y no
-   puede hacer nada salvo consultar. Las de Analytics, Usage y Monitoring son
-   claves de lectura con ámbito de cuenta que esta doc no usa nunca — no deben
-   salir de Algolia ni entrar en este repo.
+4. **Redesplegar** y verificar. Si algo falla, quitar las variables devuelve el
+   índice local: el respaldo sigue en el repo y no hay que revertir código.
 
-   Con las tres definidas, el build usa Algolia; sin ellas, índice local. No hay
-   que tocar ningún archivo.
+### Sobre el nombre del índice
 
-4. **La clave admin no entra nunca aquí.** El crawler usa la suya, y vive en
-   Algolia, no en el repo.
+`ALGOLIA_INDEX_AXON` es el nombre de una variable de entorno, no de un índice.
+Funciona igual, pero si se va a renombrar a algo como `axon-docs`, **ahora es
+gratis y después cuesta un recrawl completo**. Está vacío: es el momento.
+
+### Las otras tres claves
+
+De las cuatro que expone Algolia, el sitio solo usa la de búsqueda. Las de
+Analytics, Usage y Monitoring son claves de lectura con ámbito de cuenta que
+esta doc no toca nunca — conviene regenerarlas.
 
 **Prueba de aceptación de Ask AI** (plan §12-F7): cinco preguntas cuya respuesta
 debe venir con la cita correcta.
