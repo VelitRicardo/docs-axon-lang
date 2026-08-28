@@ -3,8 +3,6 @@ import type {Config} from '@docusaurus/types';
 import type * as Preset from '@docusaurus/preset-classic';
 
 import {
-  REPO_URL,
-  REPO_BRANCH,
   AUTHOR_URL,
   AUTHOR_NAME,
   COMMERCIAL_URL,
@@ -105,8 +103,8 @@ const config: Config = {
         docs: {
           routeBasePath: '/',
           sidebarPath: './sidebars.ts',
-          editUrl: `${REPO_URL}/tree/${REPO_BRANCH}/`,
-          // Requiere historial git: se activa cuando el repo exista.
+          // Sin `editUrl`: el repo del lenguaje es privado y "editar esta
+          // página" apuntaría a un 404 desde el pie de cada página.
           showLastUpdateTime: false,
         },
         // Plan §14-D5 — el blog es otro proyecto, con voz propia.
@@ -152,11 +150,6 @@ const config: Config = {
           type: 'localeDropdown',
           position: 'right',
         },
-        {
-          href: REPO_URL,
-          label: 'GitHub',
-          position: 'right',
-        },
       ],
     },
     footer: {
@@ -173,7 +166,6 @@ const config: Config = {
         {
           title: 'Project',
           items: [
-            {label: 'GitHub', href: REPO_URL},
             {label: 'Editions', href: COMMERCIAL_URL},
           ],
         },

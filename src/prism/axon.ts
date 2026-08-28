@@ -1,8 +1,8 @@
 /**
  * Gramática Prism del lenguaje AXON — GENERADO por scripts/sync-grammar.py.
  *
- * Fuente: axon-frontend/src/tokens.rs de VelitRicardo/axon-lang.
- * Extraídas 62 declaraciones y 115 palabras clave.
+ * Fuente: axon-frontend/src/tokens.rs del compilador (repo privado).
+ * Extraídas 63 declaraciones y 116 palabras clave.
  *
  * No editar a mano: se regenera. Si el lenguaje añade una palabra clave,
  * se vuelve a ejecutar el script y aparece pintada.
@@ -10,9 +10,9 @@
 
 import type * as PrismNamespace from 'prismjs';
 
-const DECLARATIONS = /\b(?:observable|axonstore|component|dataspace|extension|reconcile|discover|document|ensemble|manifest|resource|topology|upstream|axpoint|channel|compute|context|deliver|mandate|observe|persona|publish|receive|session|witness|anchor|corpus|daemon|effect|fabric|immune|import|intent|lambda|ledger|memory|psyche|reflex|savant|shield|socket|agent|cache|lease|probe|scope|synth|voice|weave|cors|emit|flow|heal|loop|send|tool|type|view|end|mcp|pix|run)\b/;
+const DECLARATIONS = /\b(?:observable|axonstore|component|dataspace|extension|reconcile|discover|document|ensemble|manifest|resource|topology|upstream|axpoint|channel|compute|context|deliver|mandate|observe|persona|publish|receive|session|witness|anchor|attest|corpus|daemon|effect|fabric|immune|import|intent|lambda|ledger|memory|psyche|reflex|savant|shield|socket|agent|cache|lease|probe|scope|synth|voice|weave|cors|emit|flow|heal|loop|send|tool|type|view|end|mcp|pix|run)\b/;
 
-const KEYWORDS = /\b(?:linear_constraints|budget_per_event|homotopy_search|constrained_by|temporal_frame|loss_function|on_violation|consolidate|corroborate|edge_filter|on_complete|constraint|credential|deliberate|derivation|dimensions|on_failure|provenance|quarantine|aggregate|associate|certainty|consensus|hibernate|inference|max_steps|on_breach|output_to|speculate|teleology|tolerance|continue|manifold|navigate|on_chunk|on_stuck|ontology|remember|retrieve|severity|strategy|transact|validate|against|believe|effects|explore|forward|network|perform|persist|quantum|sandbox|budget|effort|handle|ingest|listen|mutate|notify|output|reason|recall|redact|refine|resume|return|rotate|schema|stream|warden|window|within|abort|about|allow|break|doubt|drill|focus|forge|given|purge|quant|taint|tools|trail|where|yield|deny|else|from|goal|grad|into|know|mint|pure|scan|step|and|ask|for|let|not|ots|par|use|as|if|in|kd|ki|kp|or)\b/;
+const KEYWORDS = /\b(?:linear_constraints|budget_per_event|homotopy_search|constrained_by|temporal_frame|loss_function|on_violation|consolidate|corroborate|edge_filter|on_complete|constraint|credential|declassify|deliberate|derivation|dimensions|on_failure|provenance|quarantine|aggregate|associate|certainty|consensus|hibernate|inference|max_steps|on_breach|output_to|speculate|teleology|tolerance|continue|manifold|navigate|on_chunk|on_stuck|ontology|remember|retrieve|severity|strategy|transact|validate|against|believe|effects|explore|forward|network|perform|persist|quantum|sandbox|budget|effort|handle|ingest|listen|mutate|notify|output|reason|recall|redact|refine|resume|return|rotate|schema|stream|warden|window|within|abort|about|allow|break|doubt|drill|focus|forge|given|purge|quant|taint|tools|trail|where|yield|deny|else|from|goal|grad|into|know|mint|pure|scan|step|and|ask|for|let|not|ots|par|use|as|if|in|kd|ki|kp|or)\b/;
 
 export default function axon(PrismObject: typeof PrismNamespace): void {
   PrismObject.languages.axon = {

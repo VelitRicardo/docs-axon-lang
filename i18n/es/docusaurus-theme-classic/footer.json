@@ -23,10 +23,6 @@
     "message": "Instalación",
     "description": "The label of footer link with label=Install linking to /install"
   },
-  "link.item.label.GitHub": {
-    "message": "GitHub",
-    "description": "The label of footer link with label=GitHub linking to https://github.com/VelitRicardo/axon-lang"
-  },
   "link.item.label.Editions": {
     "message": "Ediciones",
     "description": "The label of footer link with label=Editions linking to https://ricardovelit.com/axon"

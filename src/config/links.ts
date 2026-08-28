@@ -6,11 +6,18 @@
  * comercial es cambiar COMMERCIAL_URL aquí y en ningún otro sitio.
  */
 
-/** Repo OSS canónico del lenguaje. */
-export const REPO_URL = 'https://github.com/VelitRicardo/axon-lang';
-
-/** Rama por defecto, usada para los enlaces "editar esta página". */
-export const REPO_BRANCH = 'main';
+/**
+ * No hay `REPO_URL`, y la ausencia es deliberada.
+ *
+ * El repo del lenguaje dejó de ser público al cambiar el modelo de negocio, y
+ * un enlace a un repo privado no es un enlace: es un 404 de GitHub servido a
+ * quien confió en el navbar. Mientras no exista un destino público, la doc no
+ * enlaza código fuente — ni en el navbar, ni en el pie, ni en "editar esta
+ * página" (por eso `editUrl` tampoco está en `docusaurus.config.ts`).
+ *
+ * El día que haya un espejo público, esta constante vuelve aquí y en ningún
+ * otro sitio.
+ */
 
 /**
  * Destino comercial. Hoy la página del autor; mañana `https://depthcon.io`.

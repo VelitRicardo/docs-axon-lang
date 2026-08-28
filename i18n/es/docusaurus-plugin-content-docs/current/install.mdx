@@ -68,16 +68,3 @@ axon check app.axon
 ```
 
 Tanto `axon --version` como `axon version` imprimen la misma cadena.
-
-## Compilar desde el código
-
-```bash
-git clone https://github.com/VelitRicardo/axon-lang
-cd axon-lang/axon-rs
-cargo build --release
-```
-
-El workspace son cuatro crates: `axon-lang` (el runtime y la CLI),
-`axon-frontend` (lexer, parser, verificador de tipos, generador de IR — cero
-dependencias en ejecución), `axon-csys` (los kernels C23) y `axon-agora` (los
-conectores sociales gobernados).

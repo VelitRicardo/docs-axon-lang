@@ -67,16 +67,3 @@ axon check app.axon
 ```
 
 Both `axon --version` and `axon version` print the same string.
-
-## Build from source
-
-```bash
-git clone https://github.com/VelitRicardo/axon-lang
-cd axon-lang/axon-rs
-cargo build --release
-```
-
-The workspace is four crates: `axon-lang` (the runtime and CLI),
-`axon-frontend` (lexer, parser, type checker, IR generator — zero runtime
-dependencies), `axon-csys` (the C23 kernels) and `axon-agora` (the governed
-social connectors).

@@ -1,8 +1,8 @@
-# AXON Docs — Plan Vivo (v0.16)
+# AXON Docs — Plan Vivo (v0.17)
 
 > **Estado:** F6 ✔ · F7 preparada, a la espera de credenciales · iterable · 14 de 16 cerradas — solo quedan D4 y D6,
 > que son recomendaciones aplicadas salvo objeción y no bloquean nada
-> **Última revisión:** 2026-08-21
+> **Última revisión:** 2026-08-27
 > **Regla del documento:** este archivo es la única fuente de verdad del proyecto
 > `docs-axon-lang` mientras no exista código. Cada iteración modifica secciones y
 > añade una línea al §16 Registro. Nada se implementa hasta que §14 quede vacío
@@ -36,15 +36,17 @@ tres exigencias no negociables:
 
 Recogidos de los repos hermanos en `Proyectos/` el 2026-08-21.
 
-> ⚠️ **Regla de fuentes (v0.3).** `axon-lsp` está **desactualizado** y en proceso
-> de arreglo. La **única fuente de verdad** para cualquier afirmación técnica es
-> el repo del lenguaje: <https://github.com/VelitRicardo/axon-lang>. Nada de lo
-> que se copie de un README hermano entra en la doc sin contrastarlo contra el
-> compilador. Los "hechos" de esta tabla son **pistas de arranque**, no verdad.
+> ⚠️ **Regla de fuentes (v0.3, revisada en v0.17).** `axon-lsp` está
+> **desactualizado** y en proceso de arreglo. La **única fuente de verdad** para
+> cualquier afirmación técnica sigue siendo el repo del lenguaje, pero **ya no es
+> una URL**: el repo pasó a privado (§14-D7) y la fuente es el clon local
+> `Proyectos/axxon-constructor`, cuyo `origin` es `VelitRicardo/axon-lang`. Nada
+> de lo que se copie de un README hermano entra en la doc sin contrastarlo contra
+> el compilador. Los "hechos" de esta tabla son **pistas de arranque**, no verdad.
 
 | Hecho | Fuente |
 |---|---|
-| **Repo OSS canónico: <https://github.com/VelitRicardo/axon-lang>** ✔ (§14-D7 cerrado). Existe además una **edición Enterprise privada y de pago** | confirmado por el autor |
+| **Repo del lenguaje: `VelitRicardo/axon-lang`, privado desde 2026-08-27** (§14-D7 reabierta y recerrada). No hay destino público que enlazar; el clon local es `Proyectos/axxon-constructor`. Existe además una **edición Enterprise privada y de pago** | confirmado por el autor |
 | Autoría: **Ricardo Velit**, autor y desarrollador único. `Bemarking` es marca **retirada** — toda referencia se elimina de la doc | confirmado por el autor |
 | Compilador/runtime en Rust; crates `axon-frontend`, `axon-csys`, `axon-lang`; kernels en C23 (`axon-csys`) | `axon-enterprise/README.md` |
 | CLI: `axon check`, `axon run` (`--tool-mode stub\|real`, `-b anthropic`), `axon fmt` | `prueba-axon/agents/asistente.axon` |
@@ -722,7 +724,7 @@ iteraciones sucesivas; el andamiaje ya los contempla.
 | **D2** ✔ | Tipografía | **Instrument Serif + Inter Tight + JetBrains Mono** |
 | **D3** ✔ | Hosting y dominio | **Vercel → `docs.ricardovelit.com`** (TLS listo) |
 | **D5** ✔ | Blog | **Eliminado.** `blog: false`; changelog como página de docs curada |
-| **D7** ✔ | Repo canónico | **<https://github.com/VelitRicardo/axon-lang>** (OSS) + Enterprise privada |
+| **D7** ✔ | Repo canónico | **Privado** desde el cambio de modelo de negocio (2026-08-27). `VelitRicardo/axon-lang` sigue siendo la fuente de verdad técnica, pero **la doc no lo enlaza**: sin destino público, un enlace es un 404. Ver §15.2 |
 | **D8** ✔ | Algolia | **Cuenta propia, ya creada.** Claves en F7 |
 | **D16** ✔ | Mintlify | **Se descarta por completo.** El corpus se **mueve** aquí; deja de vivir en `axon-lang/docs/` |
 | **D17** ✔ | Alcance del ES | **30 páginas · 23.754 palabras** — Empezar, La idea, Gramática y Doctrinas (21% del texto). La referencia de primitivas queda en EN, traducida por demanda |
@@ -832,13 +834,32 @@ Keywords de trabajo: `axon-lang`, `cognitive runtime`, `cognitive OS`,
 | `depthcon.io` | onboarding comercial **cuando esté listo** | sustituye a `/axon` cambiando una constante (§5.7) |
 | `ricardovelit.com` | sitio del autor | navbar / footer |
 | `depthcon.io` (`axon-fabric`) | tienda: binario Enterprise y demás | CTA de la sección Enterprise |
-| `github.com/VelitRicardo/axon-lang` | OSS | navbar, instalación, "editar esta página" |
+| `github.com/VelitRicardo/axon-lang` | **privado** — fuente de verdad interna, no destino público | **ninguno.** Se retiraron el ítem del navbar, el del pie, el `editUrl` de las 203 páginas y las 7 referencias en línea al código |
 | Blog (proyecto aparte) | voz de autor | navbar, cuando exista |
 
 ---
 
 ## 16. Registro de iteraciones
 
+- **v0.17 · 2026-08-27** — **El repo del lenguaje deja de ser público** y con
+  él se va todo enlace a GitHub desde la doc. Cambió el modelo de negocio; lo que
+  hasta ayer era el repo OSS canónico hoy responde 404 a cualquiera que no sea el
+  autor, y un 404 servido desde el navbar de tu propia documentación es peor que
+  no ofrecer el enlace. Se retiran: el ítem **GitHub** del navbar, el del pie, el
+  `editUrl` —que era el más silencioso de los tres, porque ponía un "editar esta
+  página" al pie de las 203 páginas— y **7 referencias en línea** al código y a
+  los papers, que quedan como `` `ruta/al/archivo.rs` `` sin enlace, igual que los
+  ítems hermanos de esas mismas listas. Se elimina la sección **"Compilar desde el
+  código"** de `install.mdx` en los dos idiomas: su `git clone` ya no funciona
+  para nadie más que el autor. `REPO_URL` y `REPO_BRANCH` desaparecen de
+  `src/config/links.ts` dejando en su lugar el porqué, para que nadie las
+  reintroduzca. `scripts/sync-grammar.py` deja de descargar `tokens.rs` de
+  `raw.githubusercontent.com` —que ahora da 404— y lo lee del clon local
+  (`--repo`, `AXON_LANG_REPO`); al reejecutarlo aparecieron dos palabras clave que
+  el sync anterior no tenía: `attest` y `declassify`. **Pendiente de decisión:** el
+  copyright del pie sigue diciendo *Apache 2.0* y §14-D11 sigue describiendo una
+  frontera OSS/Enterprise; si la licencia también cambió, esas dos afirmaciones
+  son las siguientes en revisarse.
 - **v0.16 · 2026-08-22** — **F6 completa y F7 preparada.** CI en GitHub Actions
   con tres jobs, verde en el runner: build EN+ES (que con `onBrokenLinks: throw`
   ES el verificador de enlaces), los cuatro checkers, humo sirviendo el build,

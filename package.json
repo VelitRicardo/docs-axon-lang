@@ -55,9 +55,5 @@
   },
   "description": "Official documentation for AXON — the language that compiles to LLMs.",
   "license": "Apache-2.0",
-  "author": "Ricardo Velit",
-  "repository": {
-    "type": "git",
-    "url": "https://github.com/VelitRicardo/axon-lang"
-  }
+  "author": "Ricardo Velit"
 }

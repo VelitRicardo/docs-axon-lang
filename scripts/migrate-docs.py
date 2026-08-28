@@ -67,9 +67,11 @@ def migrar_frontmatter(texto: str, es_portada: bool) -> tuple[str, list[str]]:
 ENLACES = [
     # (origen, destino, por qué)
     (
-        "](../README.md)",
-        "](https://github.com/VelitRicardo/axon-lang/blob/master/src/README.md)",
-        "apuntaba a un archivo del repo, no a una página",
+        "[`src/README.md`](../README.md)",
+        "`src/README.md`",
+        "apuntaba a un archivo del repo, no a una página; y desde que el repo es "
+        "privado tampoco hay URL pública que ofrecer, así que queda como "
+        "referencia sin enlace",
     ),
     (
         "](axonendpoint.md)",
