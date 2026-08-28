@@ -48,4 +48,13 @@ El plan vivo del proyecto —decisiones, fases y su justificación— está en
 
 ## Licencia
 
-Apache 2.0, como el lenguaje.
+**El contenido de la doc, bajo [CC BY 4.0](https://creativecommons.org/licenses/by/4.0/)**
+—prosa, ejemplos y tablas se pueden copiar y adaptar citando la fuente—. La
+marca AXON™ y el compilador, todos los derechos reservados.
+
+La separación es deliberada y no cosmética: una documentación que nadie puede
+citar ni adaptar no cumple su función, y el lenguaje dejó de ser público. Decir
+solo una de las dos cosas falsearía la otra.
+
+> Ya no dice "Apache 2.0, como el lenguaje". Lo decía de cuando el repo era OSS,
+> y dejó de ser cierto al cambiar el modelo de negocio.

@@ -52,3 +52,27 @@ export const CAPABILITY_ALIAS = 'https://seal-axon.dev';
 
 /** Versión pública del lenguaje contra la que está escrita la doc. */
 export const AXON_VERSION = '4.3.0';
+
+/**
+ * Correo de contacto del pie.
+ *
+ * No se estrena un canal: es el mismo que el sitio del autor ya publica en su
+ * propio pie. Publicar aquí uno distinto sería abrir una vía que nadie atiende.
+ */
+export const CONTACT_EMAIL = 'hola@ricardovelit.com';
+
+/**
+ * Licencia del **contenido** de la doc, y solo del contenido.
+ *
+ * CC BY 4.0 cubre lo que se lee —prosa, ejemplos, tablas—: se puede copiar y
+ * adaptar citando la fuente. No cubre la marca AXON ni el compilador, que
+ * quedan bajo todos los derechos reservados. La distinción es la razón de que
+ * el pie tenga dos frases y no una.
+ */
+export const DOC_LICENSE_URL = 'https://creativecommons.org/licenses/by/4.0/';
+
+/**
+ * Año del aviso de copyright. Literal a propósito: un `getFullYear()` haría
+ * que la fecha dependiera del día del build y no del año de la obra.
+ */
+export const COPYRIGHT_YEAR = '2026';

@@ -6,6 +6,9 @@ import {
   AUTHOR_URL,
   AUTHOR_NAME,
   COMMERCIAL_URL,
+  CONTACT_EMAIL,
+  DOC_LICENSE_URL,
+  COPYRIGHT_YEAR,
 } from './src/config/links';
 
 // Esto corre en Node.js — nada de APIs de navegador ni JSX aquí.
@@ -174,7 +177,14 @@ const config: Config = {
           items: [{label: AUTHOR_NAME, href: AUTHOR_URL}],
         },
       ],
-      copyright: `AXON — by ${AUTHOR_NAME}. Apache 2.0.`,
+      // Docusaurus inyecta este campo como HTML, de ahí el enlace en crudo.
+      // Dos frases y no una: la primera reserva la marca y el compilador, la
+      // segunda libera el texto que estás leyendo. Mezclarlas diría que la doc
+      // es propietaria, que es justo lo contrario.
+      copyright:
+        `AXON™ © ${COPYRIGHT_YEAR} ${AUTHOR_NAME}. All rights reserved.<br />` +
+        `Documentation under <a href="${DOC_LICENSE_URL}">CC BY 4.0</a>` +
+        ` · <a href="mailto:${CONTACT_EMAIL}">Contact</a>`,
     },
     ...(usarAlgolia
       ? {

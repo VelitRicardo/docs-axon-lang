@@ -1,4 +1,4 @@
-# AXON Docs — Plan Vivo (v0.17)
+# AXON Docs — Plan Vivo (v0.18)
 
 > **Estado:** F6 ✔ · F7 preparada, a la espera de credenciales · iterable · 14 de 16 cerradas — solo quedan D4 y D6,
 > que son recomendaciones aplicadas salvo objeción y no bloquean nada
@@ -841,6 +841,26 @@ Keywords de trabajo: `axon-lang`, `cognitive runtime`, `cognitive OS`,
 
 ## 16. Registro de iteraciones
 
+- **v0.18 · 2026-08-27** — **El pie deja de declarar Apache 2.0.** Era la
+  última afirmación que seguía describiendo el proyecto anterior: una licencia
+  permisiva sobre un compilador que ya no es público. Pasa a
+  `AXON™ © 2026 Ricardo Velit. Todos los derechos reservados.` con una **segunda
+  línea, y la separación importa**: la marca y el compilador quedan reservados,
+  pero el texto de la doc se publica bajo **CC BY 4.0**, porque una
+  documentación que nadie puede citar ni adaptar no cumple su función. Una sola
+  frase habría dicho que todo es propietario, incluido lo que el lector viene a
+  copiar.
+  Se añade **Contacto** (`hola@ricardovelit.com`, el mismo correo que el sitio
+  del autor ya publica: no se estrena canal). Se descarta **Términos** por ahora
+  —no existe esa página ni aquí ni en `ricardovelit.com`, y el pie no es sitio
+  para estrenar un 404 la misma semana que se quitaron todos (§16 v0.17)—;
+  entra cuando la página exista. `CONTACT_EMAIL`, `DOC_LICENSE_URL` y
+  `COPYRIGHT_YEAR` van a `src/config/links.ts` como manda §5.7: ninguna URL a
+  mano. El inglés vive en `docusaurus.config.ts` y el español en
+  `footer.json`, como el resto del sitio.
+  **Pendiente:** `package.json` sigue declarando `"license": "Apache-2.0"`, y
+  §14-D11 sigue describiendo la frontera OSS/Enterprise citando el modelo de
+  negocio v2.1 — que es justo el documento que cambió.
 - **v0.17 · 2026-08-27** — **El repo del lenguaje deja de ser público** y con
   él se va todo enlace a GitHub desde la doc. Cambió el modelo de negocio; lo que
   hasta ayer era el repo OSS canónico hoy responde 404 a cualquiera que no sea el
@@ -856,10 +876,8 @@ Keywords de trabajo: `axon-lang`, `cognitive runtime`, `cognitive OS`,
   reintroduzca. `scripts/sync-grammar.py` deja de descargar `tokens.rs` de
   `raw.githubusercontent.com` —que ahora da 404— y lo lee del clon local
   (`--repo`, `AXON_LANG_REPO`); al reejecutarlo aparecieron dos palabras clave que
-  el sync anterior no tenía: `attest` y `declassify`. **Pendiente de decisión:** el
-  copyright del pie sigue diciendo *Apache 2.0* y §14-D11 sigue describiendo una
-  frontera OSS/Enterprise; si la licencia también cambió, esas dos afirmaciones
-  son las siguientes en revisarse.
+  el sync anterior no tenía: `attest` y `declassify`. **Resuelto en v0.18:** el copyright del pie decía
+  *Apache 2.0*, heredado de cuando el repo era OSS. Ver la entrada siguiente.
 - **v0.16 · 2026-08-22** — **F6 completa y F7 preparada.** CI en GitHub Actions
   con tres jobs, verde en el runner: build EN+ES (que con `onBrokenLinks: throw`
   ES el verificador de enlaces), los cuatro checkers, humo sirviendo el build,
