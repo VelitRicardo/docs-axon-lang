@@ -1,6 +1,6 @@
 # robots.txt del ORIGEN de Vercel — no del sitio publicado.
 #
-# El sitio canónico es https://ricardovelit.com/axon-docs/, servido por un
+# El sitio canónico es https://www.ricardovelit.com/axon-docs, servido por un
 # rewrite desde el proyecto del autor. Un rastreador solo lee el robots.txt de
 # la RAÍZ del host: para el canónico eso es ricardovelit.com/robots.txt, que
 # pertenece al sitio principal y no se ve afectado por este archivo.

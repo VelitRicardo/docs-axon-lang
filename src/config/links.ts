@@ -23,8 +23,17 @@
  * Destino comercial. Hoy la página del autor; mañana `https://depthcon.io`.
  * La doc no vende (plan §5.7): esto se enlaza una vez, al pie de la sección
  * "Ediciones y frontera". Nunca como CTA.
+ *
+ * **Con `www`, por la misma razón que `AUTHOR_URL`** —ver el comentario de
+ * abajo—, y aquí el coste era mayor que en el resto: este enlace vive en el
+ * pie de las ~180 páginas de la doc, así que era la fuente que más URLs del
+ * apex le daba a Google. Search Console lo confirmó el 2026-09-05:
+ * `ricardovelit.com/axon` entró al índice el 25 de agosto, con el 308 ya
+ * puesto, y quedó compitiendo contra `www.ricardovelit.com/axon` por la misma
+ * página. Un 308 no sirve de nada si el sitio sigue publicando el host que
+ * redirige.
  */
-export const COMMERCIAL_URL = 'https://ricardovelit.com/axon';
+export const COMMERCIAL_URL = 'https://www.ricardovelit.com/axon';
 
 /**
  * Sitio del autor.
