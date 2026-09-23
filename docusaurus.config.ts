@@ -118,13 +118,24 @@ const config: Config = {
         sitemap: {
           // `lastmod` requiere historial git: se activa con el repo.
           changefreq: 'weekly',
+          // Dos correcciones sobre lo que emite el plugin:
+          // - la portada sale como `/axon-docs/` (la guarda de #5077, la misma
+          //   del canonical; ver src/theme/SiteMetadata) y esa URL es un 308;
+          // - la página de búsqueda no es contenido y no debe indexarse.
+          createSitemapItems: async ({defaultCreateSitemapItems, ...params}) =>
+            (await defaultCreateSitemapItems(params))
+              .map((item) => ({...item, url: item.url.replace(/\/+$/, '')}))
+              .filter((item) => !item.url.endsWith('/search')),
         },
       } satisfies Preset.Options,
     ],
   ],
 
   themeConfig: {
-    // TODO F3 — plantilla de OG image (titular sobre papel + regla neón).
+    // OG por defecto del locale EN; la de ES la pone el wrapper de SiteMetadata.
+    // Se generan con scripts/build-brand-assets.py. Docusaurus emite con esto
+    // og:image, twitter:image y twitter:card=summary_large_image.
+    image: 'img/og/axon-en.png',
     colorMode: {
       respectPrefersColorScheme: true,
     },
