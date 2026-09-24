@@ -1,6 +1,6 @@
 ---
 title: "REST endpoint exposing a flow over HTTP"
-description: "`axonendpoint` is the HTTP boundary primitive — `method:` from the closed catalog (get|post|put|delete), `body:` is a type, `execute:` references a flow, and the response shape mirrors the flow's `-> Output`."
+description: "REST endpoint exposing a flow over HTTP: `axonendpoint` sets method and path, binds a typed `body:` to the flow's parameters and returns a `FlowEnvelope`."
 ---
 
 **Primitives used:** `persona` · `flow` · `axonendpoint`

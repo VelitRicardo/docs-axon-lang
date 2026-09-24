@@ -1,6 +1,6 @@
 ---
 title: "Un efecto bajo presupuesto es un recurso lineal — ninguna emisión sin presupuesto (v2.28.0)"
-description: "La ley de que un efecto externo declarado bajo un `budget { rate/max … on Tool(X) }` es un recurso LINEAL: el runtime no puede emitirlo sin consumir un token de un cubo renovable (una cuota `rate:`) o de una ventana fija (una cuota `max:`),…"
+description: "Límites de tasa en AXON: un efecto con budget consume un token de un cubo rate o una ventana max; sin token se bloquea, aplaza o descarta; nunca excede."
 ---
 
 Un limitador de tasa atornillado al lado de un programa —un cubo de tokens en

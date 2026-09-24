@@ -1,6 +1,6 @@
 ---
 title: "Every boundary is guarded — the AuthorizationCoverage law (`public: true`)"
-description: "The transversal law that no endpoint may dispatch a flow across a trust boundary without either declaring a covering authorization discipline (requires / shield / compliance) OR the explicit, auditable opt-out `public: true`. A boundary…"
+description: "Endpoint authorization in AXON: every endpoint that runs a flow must declare requires, shield or compliance, or say public: true, or it does not compile."
 ---
 
 Every `axonendpoint` that names an `execute:` flow is, implicitly, opening a

@@ -1,6 +1,6 @@
 ---
 title: "Token-by-token streaming flow with backpressure policy"
-description: "Demonstrates `Stream<T>` — the flow's output is a stream; the tool declares a `stream:<policy>` effect from the closed catalog (`drop_oldest`, `degrade_quality`, `pause_upstream`, `fail`)."
+description: "Token streaming chat: a flow returns `Stream<T>` and its tool must declare a `stream:<policy>` backpressure effect from a closed catalog."
 ---
 
 **Primitives used:** `persona` · `flow` · `step` · `tool` · `axonendpoint`

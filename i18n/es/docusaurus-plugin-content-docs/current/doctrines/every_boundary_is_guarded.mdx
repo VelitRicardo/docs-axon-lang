@@ -1,6 +1,6 @@
 ---
 title: "Toda frontera tiene guardia — la ley de AuthorizationCoverage (`public: true`)"
-description: "La ley transversal de que ningún endpoint puede despachar un flow a través de una frontera de confianza sin declarar una disciplina de autorización que lo cubra (requires / shield / compliance) O el descarte explícito y auditable `public: true`. Una frontera…"
+description: "Autorización de endpoints en AXON: todo endpoint que ejecuta un flow debe declarar requires, shield o compliance, o marcar public: true; si no, no compila."
 ---
 
 Todo `axonendpoint` que nombra un flow en `execute:` está, implícitamente,

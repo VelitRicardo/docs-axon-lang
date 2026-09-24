@@ -1,6 +1,6 @@
 ---
 title: "Las conexiones se sueltan durante la cognición — una conexión de pool nunca se retiene ociosa durante…"
-description: "La ley de tiempo de vida de recursos detrás de `AXON_DB_POOLER_MODE` (v2.51.0): una conexión Postgres de pool es un recurso escaso y coherente, y un flow no debe mantenerla retirada durante un paso de COGNICIÓN (LLM) que no la usa. La conexión de la v1.32.0…"
+description: "Pool de conexiones Postgres en AXON: con AXON_DB_POOLER_MODE en session o direct, un flow libera su conexión en vez de retenerla durante un paso de LLM."
 ---
 
 El fallo canónico: un daemon (o un flow de petición) lee de un almacén, corre un

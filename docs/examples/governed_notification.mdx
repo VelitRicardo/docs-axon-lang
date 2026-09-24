@@ -1,6 +1,6 @@
 ---
 title: "A governed notification — daemon → aggregate → notify (v2.66.0)"
-description: "The founder's sales-drop case end to end: a `daemon` (v2.4.0) schedules a flow whose `aggregate` (v2.63.0) COMPUTES the signal; the flow's `if` binds the alert only when the declared threshold holds; `notify` (v2.66.0) fires post-run only…"
+description: "Sales-drop SMS alert: a `daemon` runs a flow every 30 minutes, `aggregate` computes the signal, and `notify` fires only when the threshold holds."
 ---
 
 **Primitives used:** `dataspace` · `flow` · `daemon`

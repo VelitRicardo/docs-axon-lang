@@ -1,6 +1,6 @@
 ---
 title: "Defensive shield wrapping a flow's input/output"
-description: "Declares a `shield` with `scan:` checks, `on_breach:` policy from the closed catalog, and `compliance:` markers. The endpoint references it via `shield:` to enforce protection on every request."
+description: "Input/output shield: a `shield` scans for prompt injection, PII leaks and data exfiltration with an `on_breach:` policy, attached to an endpoint."
 ---
 
 **Primitives used:** `persona` · `flow` · `shield` · `anchor` · `axonendpoint`

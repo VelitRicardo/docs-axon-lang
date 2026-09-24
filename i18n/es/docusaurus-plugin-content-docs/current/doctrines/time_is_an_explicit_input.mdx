@@ -1,6 +1,6 @@
 ---
 title: "El tiempo es una entrada explícita y registrada — nunca una lectura ambiente (v2.27.0 planificación ·…"
-description: "La ley de que cualquier decisión que AXON toma sobre CUÁNDO se ejecuta algo —una guarda temporal `window`, un tick aplazado, la reclamación de un daemon planificado— es una función PURA y TOTAL de entradas explícitas: el instante `now` (UTC), la ventana declarada (zona horaria +…"
+description: "Ventanas horarias y planificación en AXON: si algo se ejecuta es una función pura de entradas explícitas (now en UTC, zona horaria, horas, festivos)."
 ---
 
 Un planificador que lee el reloj de pared *dentro* de su decisión es inauditable:

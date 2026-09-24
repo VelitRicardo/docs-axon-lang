@@ -1,6 +1,6 @@
 ---
 title: "Delegation is attenuation — authority flows down, never up (v2.46.0)"
-description: "The law governing ephemeral-credential minting (`credential` + `mint`, v2.46.0): a principal may mint a bearer carrying ONLY capabilities it itself holds (`grants ⊆ capabilities(minter)`), only for less time than its own horizon (TTL ≤…"
+description: "Ephemeral credentials with credential and mint: a token carries only capabilities its minter holds, for a bounded TTL, checked at compile, deploy and mint."
 ---
 
 The canonical adopter scenario: a SaaS embeds a chat widget on any

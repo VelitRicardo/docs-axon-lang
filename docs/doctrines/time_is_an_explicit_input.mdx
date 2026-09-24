@@ -1,6 +1,6 @@
 ---
 title: "Time is an explicit, recorded input — never an ambient read (v2.27.0 scheduling ·…"
-description: "The law that any decision AXON makes about WHEN something runs — a `window` temporal guard, a deferred tick, a scheduled daemon claim — is a PURE, TOTAL function of explicit inputs: the instant `now` (UTC), the declared window (timezone +…"
+description: "Scheduling and time windows in AXON: whether something runs is a pure function of explicit inputs (now in UTC, timezone, allowed hours, holidays)."
 ---
 
 A scheduler that reads the wall clock *inside* its decision is

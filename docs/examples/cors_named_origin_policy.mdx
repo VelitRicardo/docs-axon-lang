@@ -1,6 +1,6 @@
 ---
 title: "CORS as a named, referenced origin policy"
-description: "`cors` declares a browser-origin policy ONCE, referenced from any `axonendpoint` via `cors: <Name>` — mirrors `shield:` exactly. Absent `cors:` means no CORS headers, ever (secure by default); `allow_origins: [\\\"*\\\"]` combined with…"
+description: "Named CORS policy: `cors` is declared once and referenced from any `axonendpoint` via `cors:`, like `shield:`. Without `cors:`, no CORS headers are sent."
 ---
 
 **Primitives used:** `flow` · `cors` · `axonendpoint`

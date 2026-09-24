@@ -1,4 +1,4 @@
-# AXON Docs — Plan Vivo (v0.18)
+# AXON Docs — Plan Vivo (v0.19)
 
 > **Estado:** F6 ✔ · F7 preparada, a la espera de credenciales · iterable · 14 de 16 cerradas — solo quedan D4 y D6,
 > que son recomendaciones aplicadas salvo objeción y no bloquean nada
@@ -841,6 +841,33 @@ Keywords de trabajo: `axon-lang`, `cognitive runtime`, `cognitive OS`,
 
 ## 16. Registro de iteraciones
 
+- **v0.19 · 2026-09-23** — **Marca en los enlaces compartidos y primer tramo
+  de SEO/GEO.** Nuevo isotipo como favicon (`brand/axon-icon-source.webp`,
+  vectorizado a color plano: a 16–48 px la textura del render es ruido) y
+  **OG por locale** 1200×630 —titular sobre papel + regla neón, como pedía §15—;
+  todo sale de `scripts/build-brand-assets.py`. La portada de cada locale
+  declara **JSON-LD** WebSite + SoftwareApplication + Person (no
+  `SoftwareSourceCode`: no hay repo público). El sitemap deja de listar la
+  portada con barra final (un 308) y la página de búsqueda.
+  Para GEO: **`llms.txt` y `llms-full.txt`** por locale, generados en
+  `postBuild` desde el sidebar (`src/plugins/llms-txt.ts`); la portada se
+  titula *"AXON — the language that compiles to LLMs"*; los dos conceptos abren
+  con una definición de una frase y cierran con preguntas frecuentes; nueva
+  página **"How AXON compares"** (LangChain, DSPy, BAML, guardrails en
+  ejecución), con una sección honesta de cuándo conviene más una biblioteca.
+  Las `description` pasan a ≤ 155 caracteres, como exige esta sección.
+  Auditoría de partida (Search Console, 90 días): indexado pero ~2 clics; nadie
+  posiciona para *compile-time compliance* ni para incertidumbre tipada, que es
+  el terreno a ocupar. "AXON" a secas está saturado de homónimos en IA; el
+  término propio es `axon-lang`.
+  **Pendiente:** (1) decidir si el isotipo nuevo sustituye a la X en el navbar
+  (§15.1) — hoy conviven; (2) los `hreflang` de las dos portadas siguen con
+  barra final: el tema los emite así y react-helmet no los deduplica (clave por
+  `href`), así que un segundo juego se sumaría en vez de sustituir; arreglarlo
+  exige eyectar `SiteMetadata`; (3) fuera de este repo: `/llms.txt` en la raíz
+  del host, los dos sitemaps en `robots.txt` y en Search Console, el H1 y el
+  `hreflang` de `/axon`, y si `VelitRicardo/docs-axon-lang` debe seguir público
+  — hoy posiciona por encima de la doc.
 - **v0.18 · 2026-08-27** — **El pie deja de declarar Apache 2.0.** Era la
   última afirmación que seguía describiendo el proyecto anterior: una licencia
   permisiva sobre un compilador que ya no es público. Pasa a

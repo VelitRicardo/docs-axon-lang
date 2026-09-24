@@ -1,6 +1,6 @@
 ---
 title: "An effect under a budget is a linear resource — no unbudgeted emission (v2.28.0)"
-description: "The law that an external effect declared under a `budget { rate/max … on Tool(X) }` is a LINEAR resource: the runtime may not emit it without consuming a token from a renewable bucket (a `rate:` quota) or a fixed window (a `max:` quota),…"
+description: "Rate limits in AXON: an effect under a budget consumes a token from a rate bucket or max window; with none left it blocks, defers or sheds, never exceeds."
 ---
 
 A rate limiter bolted on beside a program — a Redis token bucket in

@@ -1,6 +1,6 @@
 ---
 title: "Connections release across cognition — a pooled DB connection is never held idle across…"
-description: "The resource-lifetime law behind `AXON_DB_POOLER_MODE` (v2.51.0): a pooled Postgres connection is a scarce, coherent resource, and a flow must not keep one checked out across a COGNITION (LLM) step it isn't using. The v1.32.0 connection…"
+description: "Postgres pooling in AXON: with AXON_DB_POOLER_MODE set to session or direct, a flow releases its connection rather than hold it across an LLM step."
 ---
 
 The canonical failure: a daemon (or a request flow) reads from a store,

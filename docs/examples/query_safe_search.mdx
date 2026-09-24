@@ -1,6 +1,6 @@
 ---
 title: "HTTP QUERY (RFC 10008) — a complex read whose safety is a compile-time proof"
-description: "`method: QUERY` (section 107): the HTTP method RFC 10008 added in June 2026 — safe + idempotent + cacheable, WITH a request body. It is the honest method for a complex read (a filter DSL that does not fit in a URI, and that a POST would…"
+description: "HTTP QUERY method (RFC 10008): a safe, idempotent read with a request body; AXON proves at compile time that the flow behind it performs no writes."
 ---
 
 **Primitives used:** `axonendpoint` · `flow` · `cors`
