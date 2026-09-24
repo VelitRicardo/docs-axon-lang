@@ -1,4 +1,4 @@
-# AXON Docs — Plan Vivo (v0.19)
+# AXON Docs — Plan Vivo (v0.20)
 
 > **Estado:** F6 ✔ · F7 preparada, a la espera de credenciales · iterable · 14 de 16 cerradas — solo quedan D4 y D6,
 > que son recomendaciones aplicadas salvo objeción y no bloquean nada
@@ -841,6 +841,20 @@ Keywords de trabajo: `axon-lang`, `cognitive runtime`, `cognitive OS`,
 
 ## 16. Registro de iteraciones
 
+- **v0.20 · 2026-09-24** — **Instalar pasa por ventas.** AXON deja de ser
+  open source y también open core, así que ya no hay `cargo install axon-lang`
+  público que enseñar. En Instalación, Inicio rápido y la tarjeta "One binary"
+  de la portada (EN y ES), el comando pasa a ser un botón **Contact Sales** que
+  abre WhatsApp con un mensaje precargado por idioma
+  (`<ContactSales>`, `SALES_WHATSAPP_URL` en `links.ts`). Es una excepción
+  deliberada a §5.7 ("la doc no vende"): el CTA sustituye a un paso que ya no
+  existe, no se añade a una página que funcionaba.
+  **Pendiente:** 7 páginas de referencia siguen hablando de "OSS" frente a
+  "enterprise" (`quant`, `synth`, `savant`, `mint`, `rotate`, `shield`, `tool`
+  y la doctrina `every_requirement_is_grantable`), y los requisitos de
+  Instalación siguen describiendo una compilación con `cargo` (Rust 1.95+,
+  compilador de C, features). Ambas cosas dependen de cómo se entregue el
+  binario ahora.
 - **v0.19 · 2026-09-23** — **Marca en los enlaces compartidos y primer tramo
   de SEO/GEO.** Nuevo isotipo como favicon (`brand/axon-icon-source.webp`,
   vectorizado a color plano: a 16–48 px la textura del render es ruido) y

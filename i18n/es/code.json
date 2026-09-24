@@ -325,5 +325,17 @@
   "theme.tags.tagsPageTitle": {
     "message": "Etiquetas",
     "description": "The title of the tag list page"
+  },
+  "contactSales.prefill": {
+    "message": "Hola, quiero obtener AXON.",
+    "description": "Mensaje precargado en WhatsApp al pulsar Contact Sales"
+  },
+  "contactSales.label": {
+    "message": "Contactar a ventas",
+    "description": "Botón que abre WhatsApp con ventas"
+  },
+  "contactSales.note": {
+    "message": "Abre un chat de WhatsApp con ventas.",
+    "description": "Nota junto al botón Contact Sales"
   }
 }

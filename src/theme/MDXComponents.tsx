@@ -5,6 +5,7 @@ import DeclCard from '@site/src/components/DeclCard';
 import CliBlock from '@site/src/components/CliBlock';
 import VersionBadge from '@site/src/components/VersionBadge';
 import DefinedTerm from '@site/src/components/DefinedTerm';
+import ContactSales from '@site/src/components/ContactSales';
 import {
   Info,
   Note,
@@ -36,6 +37,7 @@ export default {
   CliBlock,
   VersionBadge,
   DefinedTerm,
+  ContactSales,
   // Equivalentes de Mintlify: permiten migrar el corpus sin editar su cuerpo.
   Info,
   Note,

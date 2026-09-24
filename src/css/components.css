@@ -245,6 +245,49 @@
     font-weight: 700;
   }
 
+  /* ─── Contact Sales ─────────────────────────────────────────────── */
+
+  /**
+   * El único botón de la doc. Tinta invertida y no acento: el neón es trazo,
+   * nunca fondo de texto (regla de arriba), y la inversión ya cambia sola con
+   * el tema.
+   */
+  .ax-cta {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: var(--space-3) var(--space-4);
+    margin: var(--space-4) 0 var(--space-6);
+  }
+
+  .ax-cta__button {
+    display: inline-block;
+    padding: var(--space-2) var(--space-4);
+    border-radius: var(--radius);
+    border-bottom: var(--rule) solid var(--color-accent);
+    background: var(--surface-inverse);
+    color: var(--text-inverse);
+    font-weight: 600;
+    text-decoration: none;
+    transition: opacity var(--duration) var(--ease);
+  }
+
+  .ax-cta__button:hover {
+    color: var(--text-inverse);
+    text-decoration: none;
+    opacity: 0.88;
+  }
+
+  .ax-cta__button:focus-visible {
+    outline: var(--focus-width) solid var(--focus-ring);
+    outline-offset: var(--focus-offset);
+  }
+
+  .ax-cta__note {
+    color: var(--text-secondary);
+    font-size: var(--size-sm);
+  }
+
   /* ─── Capitular ─────────────────────────────────────────────────── */
 
   /**

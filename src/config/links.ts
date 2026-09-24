@@ -36,6 +36,16 @@
 export const COMMERCIAL_URL = 'https://www.ricardovelit.com/axon';
 
 /**
+ * Canal de ventas: WhatsApp del autor.
+ *
+ * El compilador dejó de ser open source (ni open core): ya no hay
+ * `cargo install` público que enseñar, así que donde la doc explicaba cómo
+ * instalarlo ahora ofrece este contacto (componente `<ContactSales>`).
+ * El texto precargado lo pone el componente, por locale.
+ */
+export const SALES_WHATSAPP_URL = 'https://wa.me/573189454595';
+
+/**
  * Sitio del autor.
  *
  * **Con `www`, y no es cosmético.** El apex hace un 308 permanente hacia www,
