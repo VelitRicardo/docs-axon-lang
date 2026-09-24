@@ -111,7 +111,9 @@ export default function SiteMetadataWrapper(props: Props): ReactNode {
         '@type': 'SoftwareApplication',
         '@id': `${siteUrl}/axon-docs#software`,
         name: 'AXON',
-        alternateName: 'axon-lang',
+        /* Las dos formas en que se busca: el identificador técnico y la
+           consulta que ya roza la primera página en Search Console. */
+        alternateName: ['axon-lang', 'AXON programming language'],
         applicationCategory: 'DeveloperApplication',
         applicationSubCategory: 'Programming language',
         operatingSystem: 'Linux, macOS, Windows',

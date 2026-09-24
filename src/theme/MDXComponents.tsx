@@ -4,6 +4,7 @@ import {Ledger, LedgerItem} from '@site/src/components/Ledger';
 import DeclCard from '@site/src/components/DeclCard';
 import CliBlock from '@site/src/components/CliBlock';
 import VersionBadge from '@site/src/components/VersionBadge';
+import DefinedTerm from '@site/src/components/DefinedTerm';
 import {
   Info,
   Note,
@@ -34,6 +35,7 @@ export default {
   DeclCard,
   CliBlock,
   VersionBadge,
+  DefinedTerm,
   // Equivalentes de Mintlify: permiten migrar el corpus sin editar su cuerpo.
   Info,
   Note,
