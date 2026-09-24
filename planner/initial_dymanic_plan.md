@@ -1,4 +1,4 @@
-# AXON Docs — Plan Vivo (v0.20)
+# AXON Docs — Plan Vivo (v0.21)
 
 > **Estado:** F6 ✔ · F7 preparada, a la espera de credenciales · iterable · 14 de 16 cerradas — solo quedan D4 y D6,
 > que son recomendaciones aplicadas salvo objeción y no bloquean nada
@@ -841,6 +841,23 @@ Keywords de trabajo: `axon-lang`, `cognitive runtime`, `cognitive OS`,
 
 ## 16. Registro de iteraciones
 
+- **v0.21 · 2026-09-24** — **La doc adopta el Brand book de AXON v1.0.** El
+  sistema de papel, navy y neón (§6, §15.1) queda sustituido. Paleta de diez
+  colores exactos —hueso y tinta como fondos, terracota como único acento
+  (terracota claro sobre tinta)—; Newsreader, IBM Plex Sans e IBM Plex Mono
+  self-hosted (`sync-fonts.py`); radios a cero; el código **siempre sobre tinta
+  profunda**, también en modo claro, así que la sintaxis es una sola y juega
+  con luminosidad, no con matiz. Los antetítulos pasan a Plex Mono 500 en
+  versalitas terracota. El navbar estrena el isotipo nuevo (`axon-mark.svg` /
+  `axon-mark-dark.svg`, generados como favicon y OG desde
+  `brand/axon-icon-source.webp`); la X de cuatro cuñas queda como archivo.
+  El cambio es de tokens: los componentes consumen semánticos y no se tocaron,
+  salvo tres ajustes. (1) La navegación —sidebar, TOC, migas, navbar— deja de
+  heredar el color de enlace: con terracota habría pintado media pantalla, y
+  el brand book reserva el acento; solo el elemento activo lo lleva. (2) Las
+  cabeceras de tabla en mono con `--tracking-label` (0.08em): el 0.18em de los
+  antetítulos las hacía ilegibles en columnas estrechas. (3) Plex Mono solo
+  tiene 400 y 500, así que los 700 en mono bajan a 500. 36 pares AA verificados.
 - **v0.20 · 2026-09-24** — **Instalar pasa por ventas.** AXON deja de ser
   open source y también open core, así que ya no hay `cargo install axon-lang`
   público que enseñar. En Instalación, Inicio rápido y la tarjeta "One binary"

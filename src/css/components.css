@@ -23,12 +23,13 @@
     margin: 0 0 var(--space-4);
     padding-bottom: var(--space-2);
     border-bottom: var(--hairline) solid var(--border-hairline);
-    font-family: var(--font-text);
+    /* Antetítulo del brand book: Plex Mono 500 en versalitas, terracota. */
+    font-family: var(--font-mono);
     font-size: var(--size-xs);
-    font-weight: 600;
+    font-weight: 500;
     letter-spacing: var(--tracking-wide);
     text-transform: uppercase;
-    color: var(--text-muted);
+    color: var(--color-accent-text);
     max-width: none;
   }
 
@@ -149,7 +150,7 @@
   .ax-decl__keyword {
     font-family: var(--font-mono);
     font-size: var(--size-base);
-    font-weight: 700;
+    font-weight: 500;
     color: var(--syntax-decl);
     background: none;
     border: 0;
@@ -194,12 +195,13 @@
     margin: 0;
     padding: var(--space-2) var(--space-4);
     border-bottom: var(--hairline) solid var(--code-border);
-    background-color: var(--surface-sunken);
+    /* La etiqueta es parte del bloque de código: mismo fondo tinta profunda. */
+    background-color: var(--code-bg);
     font-family: var(--font-mono);
     font-size: var(--size-2xs);
     letter-spacing: var(--tracking-wide);
     text-transform: uppercase;
-    color: var(--text-muted);
+    color: var(--syntax-comment);
     max-width: none;
   }
 
@@ -242,13 +244,13 @@
 
   .ax-version strong {
     color: var(--text-primary);
-    font-weight: 700;
+    font-weight: 500;
   }
 
   /* ─── Contact Sales ─────────────────────────────────────────────── */
 
   /**
-   * El único botón de la doc. Tinta invertida y no acento: el neón es trazo,
+   * El único botón de la doc. Tinta invertida y no acento: el terracota es trazo,
    * nunca fondo de texto (regla de arriba), y la inversión ya cambia sola con
    * el tema.
    */

@@ -32,16 +32,17 @@
 
     /**
      * El primario de Infima gobierna enlaces, estados activos del sidebar y
-     * botones. Va a navy, no al neón: el neón no tiene contraste para texto
-     * sobre papel (1.31:1) y aquí se usaría como color de texto.
+     * botones: va al color de enlace, que es el acento (terracota). Sus
+     * variantes no piden primitivas nuevas — el brand book no tiene más
+     * terracotas —: las oscuras van al hover, las claras al acento.
      */
     --ifm-color-primary: var(--text-link);
-    --ifm-color-primary-dark: var(--ax-navy-900);
-    --ifm-color-primary-darker: var(--ax-navy-900);
-    --ifm-color-primary-darkest: var(--ax-navy-900);
-    --ifm-color-primary-light: var(--ax-navy-500);
-    --ifm-color-primary-lighter: var(--ax-navy-500);
-    --ifm-color-primary-lightest: var(--ax-navy-200);
+    --ifm-color-primary-dark: var(--text-link-hover);
+    --ifm-color-primary-darker: var(--text-link-hover);
+    --ifm-color-primary-darkest: var(--text-link-hover);
+    --ifm-color-primary-light: var(--color-accent-mid);
+    --ifm-color-primary-lighter: var(--color-accent-mid);
+    --ifm-color-primary-lightest: var(--color-accent-mid);
 
     /* Forma */
     --ifm-global-radius: var(--radius);
@@ -89,7 +90,7 @@
     --ifm-transition-timing-default: var(--ease);
   }
 
-  /* La marca hereda el color del texto: navy sobre papel, papel sobre noche. */
+  /* El isotipo trae su color (terracota, o terracota claro vía srcDark). */
   .navbar__logo img,
   .navbar__logo svg {
     color: var(--text-primary);
@@ -138,5 +139,45 @@
   .table-of-contents__link--active {
     color: var(--text-link);
     font-weight: 500;
+  }
+
+  /**
+   * El aparato de navegación —sidebar, TOC, migas, paginación— va en tinta,
+   * no en terracota. La regla global `a` de base.css pinta cada enlace con el
+   * acento, y en el cuerpo es lo correcto; aquí convertiría media pantalla en
+   * terracota, justo lo que el brand book prohíbe ("terracota solo como
+   * acento"). Solo el elemento activo conserva el acento.
+   */
+  .menu__link,
+  .menu__caret,
+  .breadcrumbs__link,
+  .pagination-nav__link {
+    color: var(--ifm-menu-color);
+  }
+
+  .table-of-contents__link:not(.table-of-contents__link--active) {
+    color: var(--text-muted);
+  }
+
+  .menu__link:hover,
+  .breadcrumbs__link:hover,
+  .table-of-contents__link:not(.table-of-contents__link--active):hover {
+    color: var(--text-primary);
+  }
+
+  .navbar__link {
+    color: var(--ifm-navbar-link-color);
+  }
+
+  .navbar__link--active {
+    color: var(--text-link);
+  }
+
+  .menu__link--active:not(.menu__link--sublist) {
+    color: var(--ifm-menu-color-active);
+  }
+
+  .pagination-nav__label {
+    color: var(--text-primary);
   }
 }

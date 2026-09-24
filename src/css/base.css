@@ -51,7 +51,7 @@
   }
 
   /**
-   * La firma visual (plan §6.4): una regla neón bajo el titular de cada
+   * La firma visual (plan §6.4): un filete terracota bajo el titular de cada
    * página. Cita directa de la referencia impresa, y el único sitio donde el
    * acento aparece a tamaño grande.
    */
@@ -111,10 +111,10 @@
   }
 
   th {
-    font-family: var(--font-text);
-    font-weight: 600;
+    font-family: var(--font-mono);
+    font-weight: 500;
     font-size: var(--size-sm);
-    letter-spacing: var(--tracking-wide);
+    letter-spacing: var(--tracking-label);
     text-transform: uppercase;
     color: var(--text-secondary);
     background-color: var(--surface-sunken);

@@ -11,8 +11,8 @@ septiembre 2026): hueso y tinta como únicos fondos, terracota como único
 acento, Newsreader para titulares y frases de remate, IBM Plex Mono para
 antetítulos en versalitas (la OG no lleva cuerpo de texto, así que Plex Sans
 no entra). Sin degradados, sin sombras, sin esquinas
-redondeadas; reglas de 1px y un solo filete de 3px. Ojo: la doc (tokens.css)
-todavía usa el sistema anterior —navy y neón—; estas imágenes ya no.
+redondeadas; reglas de 1px y un solo filete de 3px. La doc (tokens.css) usa
+el mismo sistema: si cambia la paleta allí, cambia aquí.
 
 POR QUÉ SE VECTORIZA EL ISOTIPO. A 16–48 px la textura y el sombreado del
 render se convierten en ruido: lo que se lee es la silueta. Y el brand book
@@ -21,6 +21,8 @@ traza la silueta (alfa > 50 %) y todo —favicon y OG— sale de ese trazo, en
 terracota plano.
 
 Salida (todo en static/img/):
+    axon-mark.svg          isotipo del navbar, recortado al trazo: terracota
+    axon-mark-dark.svg     el mismo en terracota claro, para el modo oscuro
     favicon.svg            trazo vectorial, terracota
     favicon.ico            16 · 32 · 48
     apple-touch-icon.png   180, sobre hueso (iOS rellena de negro la transparencia)
@@ -89,6 +91,20 @@ def mark_svg(contours, bbox, color: str, pad: float) -> str:
     return (
         f'<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 {side:.1f} {side:.1f}">'
         f'<title>AXON</title><path fill="{color}" d="{d}"/></svg>'
+    )
+
+
+def tight_svg(contours, bbox, color: str) -> str:
+    """El isotipo recortado a su trazo, sin cuadrado alrededor: para el navbar,
+    donde la altura es fija y un margen vertical solo lo encogería."""
+    x, y, w, h = bbox
+    d = ''.join(
+        'M' + ' '.join(f'{px - x:.1f} {py - y:.1f}' for px, py in c) + 'Z'
+        for c in contours
+    )
+    return (
+        f'<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 {w} {h}" role="img" aria-label="AXON">'
+        f'<title>AXON</title><path fill="{color}" d="{d}"/></svg>\n'
     )
 
 
@@ -195,6 +211,8 @@ def main() -> None:
     rgba = load_source()
     contours, bbox = trace(rgba)
 
+    (OUT / 'axon-mark.svg').write_text(tight_svg(contours, bbox, TERRACOTA), encoding='utf-8')
+    (OUT / 'axon-mark-dark.svg').write_text(tight_svg(contours, bbox, TERRACOTA_CLARO), encoding='utf-8')
     (OUT / 'favicon.svg').write_text(
         mark_svg(contours, bbox, TERRACOTA, FAVICON_PAD) + '\n', encoding='utf-8'
     )

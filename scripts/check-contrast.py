@@ -10,10 +10,9 @@ Criterios:
   4.5:1  texto normal (WCAG 1.4.3)
   3.0:1  bordes de control y objetos gráficos con significado (WCAG 1.4.11)
 
-Los elementos decorativos —la regla neón bajo los titulares, los divisores
-hairline— están exentos por norma y no se comprueban: no transmiten
-información. Esa exención es justamente la razón por la que el neón puede ser
-neón (plan §6.2: nunca lleva texto encima en modo claro).
+Los elementos decorativos —el filete terracota bajo los titulares, los
+divisores hairline— están exentos por norma y no se comprueban: no transmiten
+información.
 
 Uso:  python scripts/check-contrast.py
 """

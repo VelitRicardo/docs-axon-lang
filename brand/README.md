@@ -1,11 +1,16 @@
 # Fuentes de marca
 
-`axon-mark-source.svg` es el archivo original entregado por el autor: un PNG
-de 113 KB envuelto en SVG con máscara de luminancia, no un vectorial real.
-Se conserva como respaldo del origen.
+El sistema visual es el **Brand book de AXON v1.0** (septiembre 2026): hueso y
+tinta, terracota como único acento, Newsreader + IBM Plex Sans + IBM Plex Mono.
+Vive en `src/css/tokens.css`; esta carpeta solo guarda los originales.
 
-El asset que usa el sitio es `static/img/axon-mark.svg` — cuatro polígonos
-vectoriales trazados desde este archivo (IoU 0.987), 434 bytes, `currentColor`.
-Los favicons se generan desde la misma geometría.
+- `axon-icon-source.webp` — el isotipo (render 3D, 1080², fondo transparente).
+  Es la fuente de **todo** lo que lleva la marca en el sitio: el isotipo del
+  navbar (`axon-mark.svg`, `axon-mark-dark.svg`), los favicons, `icon-512.png`
+  y las imágenes OG. Se generan con `python scripts/build-brand-assets.py`, que
+  vectoriza la silueta a color plano (el brand book no admite degradados ni
+  sombras).
+- `axon-mark-source.svg` — la marca anterior (cuatro cuñas en X), retirada con
+  el brand book. Se conserva solo como archivo histórico.
 
 Esta carpeta **no se publica**: nada aquí llega al build.

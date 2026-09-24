@@ -159,9 +159,12 @@ const config: Config = {
     ],
     navbar: {
       title: 'AXON',
+      // Isotipo del brand book, terracota sobre hueso y terracota claro sobre
+      // tinta. Lo generan scripts/build-brand-assets.py.
       logo: {
         alt: 'AXON',
         src: 'img/axon-mark.svg',
+        srcDark: 'img/axon-mark-dark.svg',
       },
       items: [
         {

@@ -27,11 +27,15 @@ UA = (
 # Los woff2 viven bajo src/, no bajo static/, para que los gestione el bundler:
 # emite cada archivo con hash de contenido (cacheable para siempre) y las rutas
 # no dependen del baseUrl. Un `url()` absoluto aquí rompería el build.
+# Las tres familias del Brand book de AXON (v1.0): Newsreader para titulares
+# y frases de remate, IBM Plex Sans para el texto, IBM Plex Mono para código y
+# antetítulos. Plex Mono no es variable en Google Fonts: se piden sus pesos
+# sueltos, y por eso el nombre del archivo lleva el peso.
 FAMILIES = {
     # slug              spec de la API css2
-    "instrument-serif": "Instrument+Serif:ital@0;1",
-    "inter-tight": "Inter+Tight:ital,wght@0,400..700;1,400..700",
-    "jetbrains-mono": "JetBrains+Mono:ital,wght@0,400..700;1,400..700",
+    "newsreader": "Newsreader:ital,opsz,wght@0,6..72,300..500;1,6..72,300..500",
+    "ibm-plex-sans": "IBM+Plex+Sans:ital,wght@0,300..600;1,300..600",
+    "ibm-plex-mono": "IBM+Plex+Mono:ital,wght@0,400;0,500;1,400",
 }
 
 # EN y ES no necesitan más.
@@ -81,7 +85,11 @@ def main() -> None:
                 # Mismo archivo que otro bloque: se reutiliza, no se duplica.
                 name = by_hash[digest]
             else:
-                name = f"{slug}-{style}-{subset}.woff2"
+                # Un rango (`300 600`) es un archivo variable; un peso suelto,
+                # una instancia: sin el peso en el nombre, dos instancias del
+                # mismo estilo se pisarían.
+                w = "" if " " in weight else f"-{weight}"
+                name = f"{slug}-{style}{w}-{subset}.woff2"
                 io.open(os.path.join(FONT_DIR, name), "wb").write(data)
                 by_hash[digest] = name
                 total += len(data)
