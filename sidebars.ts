@@ -27,6 +27,7 @@ const sidebars: SidebarsConfig = {
       items: [
         'concepts/compile-time-compliance',
         'concepts/epistemic-types',
+        'concepts/how-axon-compares',
       ],
     },
     {

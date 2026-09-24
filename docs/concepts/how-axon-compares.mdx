@@ -1,0 +1,71 @@
+---
+title: "How AXON compares to LangChain, DSPy and BAML"
+sidebar_label: "How AXON compares"
+description: "LangChain, DSPy, BAML and runtime guardrails solve different problems than a compiler for LLM programs. What each one checks, and when to pick which."
+---
+
+**AXON is a compiler; LangChain, DSPy and BAML are not the same kind of tool.**
+They are libraries and code generators that run inside a host language — mostly
+Python or TypeScript — and inherit its guarantees. AXON is a language with its
+own type checker, whose types carry things a host language does not know about:
+the regulatory class of a value and how much the system may believe it.
+
+That difference decides *when* a mistake is found. In a library, a regulated
+value reaching an unguarded endpoint is a runtime event, if anything catches it.
+In AXON it is a type error, and the program does not build.
+
+## At a glance
+
+| | What it is | What "compile" or "check" means there | Where policy is enforced |
+| --- | --- | --- | --- |
+| **AXON** | A compiled language targeting LLMs, with a native Rust runtime | Type checking the program: regulatory-class coverage, epistemic levels, input trust, session types | At compile time, again at deploy, fail-closed at runtime |
+| **LangChain / LangGraph** | A library for composing LLM calls, tools, retrievers and agent graphs | Whatever the host language's type checker offers | At runtime, through callbacks and integrations |
+| **DSPy** | A framework for programming language models declaratively | *Optimizing* prompts, demonstrations or weights against a metric | Not its concern — it optimizes quality |
+| **BAML** | A DSL for typed LLM functions that generates client code | Checking function signatures and parsing model output into the declared schema | At the output boundary, at runtime |
+| **Runtime guardrails** (e.g. NeMo Guardrails) | Programmable rails around a model's input and output | Matching rails against live traffic | At runtime, on each request |
+
+## "Compile" means different things
+
+The word causes more confusion than any other in this space.
+
+- In **DSPy**, compiling a program means running an optimizer that improves its
+  prompts or weights against examples and a metric. It is a search for better
+  outputs.
+- In **AXON**, compiling means what it means for C or Rust: parsing, type
+  checking, lowering to an IR — and refusing the program when a rule is broken.
+  It is a proof obligation, not an optimization.
+
+The two are not in competition. One answers "how do I get better answers?", the
+other "which programs are allowed to exist?".
+
+## What only a type system can refuse
+
+A library can offer a guardrail; it cannot make its absence a build error,
+because the host language has no idea what a guardrail is. AXON's checker does:
+
+- **Regulated data across an unguarded boundary** —
+  [compile-time compliance](/concepts/compile-time-compliance): a boundary
+  carrying `HIPAA` or `GDPR` data without a shield covering those classes is
+  rejected (`axon-T957`).
+- **A guess presented as a fact** — [epistemic types](/concepts/epistemic-types):
+  a `speculate` value cannot be written into a system of record as though it
+  were `know`.
+- **Untrusted input reaching a trusted sink** without passing through a
+  `shield`.
+
+The [quickstart](/quickstart) shows the first one in thirty seconds.
+
+## When a library is the better choice
+
+Being honest about fit is part of the comparison:
+
+- **Prototypes, notebooks and single prompts.** A library in the language you
+  already use is less ceremony, and a compiler's guarantees pay for themselves
+  only once a program has boundaries worth guarding.
+- **A specific integration you need today.** The large frameworks ship hundreds
+  of connectors. If your problem is mostly wiring, wiring is what they are for.
+- **Prompt quality.** If the question is "how do I get a better answer from this
+  model?", an optimizer like DSPy is built for exactly that.
+
+AXON pays off where the cost of a mistake is not a worse answer but a regulated
+record in the wrong place, or a guess acted on as a fact.

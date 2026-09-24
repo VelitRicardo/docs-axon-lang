@@ -1,5 +1,6 @@
 import axonPrismTheme from './src/prism/theme';
-import type {Config} from '@docusaurus/types';
+import llmsTxt from './src/plugins/llms-txt';
+import type {Config, PluginConfig} from '@docusaurus/types';
 import type * as Preset from '@docusaurus/preset-classic';
 
 import {
@@ -54,21 +55,25 @@ const config: Config = {
 
   onBrokenLinks: 'throw',
 
-  plugins: usarAlgolia
-    ? []
-    : [
-        [
-          '@easyops-cn/docusaurus-search-local',
-          {
-            hashed: true,
-            indexBlog: false,
-            language: ['en', 'es'],
-            docsRouteBasePath: '/',
-            highlightSearchTermsOnTargetPage: true,
-            searchResultLimits: 8,
-          },
-        ],
-      ],
+  plugins: [
+    // llms.txt y llms-full.txt por locale — ver src/plugins/llms-txt.ts.
+    llmsTxt,
+    ...(usarAlgolia
+      ? []
+      : [
+          [
+            '@easyops-cn/docusaurus-search-local',
+            {
+              hashed: true,
+              indexBlog: false,
+              language: ['en', 'es'],
+              docsRouteBasePath: '/',
+              highlightSearchTermsOnTargetPage: true,
+              searchResultLimits: 8,
+            },
+          ] satisfies PluginConfig,
+        ]),
+  ],
 
   headTags: [
     // Respaldo para navegadores que no leen favicons SVG.

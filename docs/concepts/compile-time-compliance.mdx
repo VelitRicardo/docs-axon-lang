@@ -3,6 +3,12 @@ title: "Compile-time compliance"
 description: "Regulatory class is a type. Coverage is a set difference. The vocabulary is closed. Here is exactly what that proves — and what it does not."
 ---
 
+**Compile-time compliance** means the rules about where regulated data may go
+are checked by the compiler, not by a process. A regulatory class — `HIPAA`,
+`GDPR`, `PCI_DSS` and twelve more — is part of a value's type, and a program
+that carries one across a boundary without a shield covering it is rejected
+before it runs.
+
 Most systems treat compliance as a process: a policy document, a review, an
 audit that happens after the code exists. AXON treats it as a **property of the
 type system**, checked before anything runs.
@@ -104,3 +110,36 @@ states that qualifier in the evidence it emits.
 
 The FIPS 140-3 posture is *algorithmically conformant, not formally validated*.
 CAVP and CMVP are laboratory engagements, and no compiler can close them.
+
+## Frequently asked questions
+
+### Does AXON make my system HIPAA or GDPR compliant?
+
+No, and nothing in the language claims to. What AXON machine-checks is narrower
+and exact: that every regulatory class is a real one (`axon-T1214`) and that
+every boundary carrying a class declares a shield covering it (`axon-T957`,
+`axon-T1215`). The operational obligations of each regulation are your shield
+and flow design — see [What this proves, precisely](#what-this-proves-precisely).
+
+### What happens when a boundary is not covered?
+
+`axon check` exits `1`, the same as a syntax error, and the diagnostic names the
+classes the shield is missing. Nothing downstream builds.
+
+### How is this different from runtime guardrails?
+
+A runtime guardrail inspects traffic while the system runs, so an unguarded path
+is found — if at all — in production. The coverage rule is checked before the
+program exists as a deployable artifact, so an unguarded path cannot be
+deployed. The two are complementary: a shield is itself what acts at runtime
+when a breach is detected. The compiler's job is to guarantee that one is there.
+
+### Is the check only at compile time?
+
+No. It runs again at deploy, against the artifact (`axon pcc verify`), and the
+typed bus fails closed at `publish` for IR that never went through the checker.
+
+### Which regulatory classes exist?
+
+Fifteen, in a closed, case-sensitive registry — listed in
+[The vocabulary is closed](#the-vocabulary-is-closed).

@@ -1,0 +1,74 @@
+---
+title: "AXON frente a LangChain, DSPy y BAML"
+sidebar_label: "AXON frente a otros"
+description: "LangChain, DSPy, BAML y los guardrails en ejecución resuelven otros problemas que un compilador de programas LLM. Qué verifica cada uno y cuándo elegir cuál."
+---
+
+**AXON es un compilador; LangChain, DSPy y BAML no son el mismo tipo de
+herramienta.** Son bibliotecas y generadores de código que corren dentro de un
+lenguaje anfitrión —sobre todo Python o TypeScript— y heredan sus garantías.
+AXON es un lenguaje con su propio verificador de tipos, cuyos tipos llevan cosas
+que un lenguaje anfitrión desconoce: la clase regulatoria de un valor y cuánto
+puede creérselo el sistema.
+
+Esa diferencia decide *cuándo* se descubre un error. En una biblioteca, un valor
+regulado que llega a un endpoint sin guardia es un evento en ejecución, si algo
+lo detecta. En AXON es un error de tipos, y el programa no se construye.
+
+## De un vistazo
+
+| | Qué es | Qué significa ahí "compilar" o "verificar" | Dónde se aplica la política |
+| --- | --- | --- | --- |
+| **AXON** | Un lenguaje compilado cuyo destino son los LLM, con runtime nativo en Rust | Verificar los tipos del programa: cobertura de clases regulatorias, niveles epistémicos, confianza de la entrada, tipos de sesión | En compilación, otra vez en el despliegue, y falla cerrado en ejecución |
+| **LangChain / LangGraph** | Una biblioteca para componer llamadas a LLM, herramientas, recuperadores y grafos de agentes | Lo que ofrezca el verificador de tipos del lenguaje anfitrión | En ejecución, mediante callbacks e integraciones |
+| **DSPy** | Un framework para programar modelos de lenguaje de forma declarativa | *Optimizar* prompts, demostraciones o pesos contra una métrica | No es su objetivo — optimiza calidad |
+| **BAML** | Un DSL para funciones LLM tipadas que genera código cliente | Verificar firmas de funciones y parsear la salida del modelo al esquema declarado | En la frontera de salida, en ejecución |
+| **Guardrails en ejecución** (p. ej. NeMo Guardrails) | Rieles programables alrededor de la entrada y la salida de un modelo | Contrastar los rieles con el tráfico en vivo | En ejecución, en cada petición |
+
+## "Compilar" significa cosas distintas
+
+Es la palabra que más confusión genera en este terreno.
+
+- En **DSPy**, compilar un programa significa ejecutar un optimizador que mejora
+  sus prompts o sus pesos a partir de ejemplos y una métrica. Es una búsqueda de
+  mejores respuestas.
+- En **AXON**, compilar significa lo mismo que en C o en Rust: parsear,
+  verificar tipos, bajar a una IR — y rechazar el programa cuando rompe una
+  regla. Es una obligación de prueba, no una optimización.
+
+No compiten entre sí. Uno responde "¿cómo obtengo mejores respuestas?"; el otro,
+"¿qué programas tienen permitido existir?".
+
+## Lo que solo un sistema de tipos puede rechazar
+
+Una biblioteca puede ofrecer un guardrail; no puede convertir su ausencia en un
+error de construcción, porque el lenguaje anfitrión no sabe qué es un guardrail.
+El verificador de AXON sí:
+
+- **Datos regulados a través de una frontera sin guardia** —
+  [cumplimiento en compilación](/concepts/compile-time-compliance): una frontera
+  que lleva datos `HIPAA` o `GDPR` sin un shield que cubra esas clases se
+  rechaza (`axon-T957`).
+- **Una conjetura presentada como hecho** —
+  [tipos epistémicos](/concepts/epistemic-types): un valor `speculate` no puede
+  escribirse en un sistema de registro como si fuera `know`.
+- **Una entrada sin confianza que llega a un destino de confianza** sin pasar
+  por un `shield`.
+
+El [inicio rápido](/quickstart) muestra el primero en treinta segundos.
+
+## Cuándo conviene más una biblioteca
+
+Ser honesto sobre el encaje forma parte de la comparación:
+
+- **Prototipos, notebooks y prompts sueltos.** Una biblioteca en el lenguaje que
+  ya usas pide menos ceremonia, y las garantías de un compilador solo compensan
+  cuando un programa tiene fronteras que merezca la pena vigilar.
+- **Una integración concreta que necesitas hoy.** Los grandes frameworks traen
+  cientos de conectores. Si tu problema es sobre todo de cableado, para eso
+  están.
+- **Calidad del prompt.** Si la pregunta es "¿cómo saco una respuesta mejor de
+  este modelo?", un optimizador como DSPy está hecho justo para eso.
+
+AXON compensa allí donde el coste de un error no es una respuesta peor, sino un
+registro regulado en el lugar equivocado, o una conjetura tratada como hecho.

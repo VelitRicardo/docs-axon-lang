@@ -3,6 +3,11 @@ title: "Tipos epistémicos"
 description: "La salida de un modelo no es una cadena. Lleva cuánto tiene derecho el sistema a creérsela — y el compilador no deja que una conjetura se convierta en un hecho."
 ---
 
+Los **tipos epistémicos** adjuntan a cada salida de un modelo cuánto tiene
+derecho el sistema a creérsela —`doubt`, `speculate`, `believe` o `know`— y el
+compilador impide que un nivel inferior se presente como hecho allí donde una
+persona o un sistema de registro va a actuar sobre él.
+
 Todos los frameworks tratan la salida de un LLM como un `string`. AXON la trata
 como un valor sobre un **retículo epistémico tipado**: el texto, más cuánto
 tiene derecho el sistema a creérselo.
@@ -76,3 +81,35 @@ confianza hasta un destino de confianza pasa por al menos un `shield`.
 Por eso un flow que adquiere contenido de entrada adversario y se lo pasa a un
 paso cognitivo sin ningún shield en el ámbito se rechaza en compilación, en vez
 de producir una respuesta plausible derivada de una entrada envenenada.
+
+## Preguntas frecuentes
+
+### ¿Los tipos epistémicos eliminan las alucinaciones?
+
+No. Un modelo puede seguir equivocándose. Lo que cambia es lo que el *sistema*
+puede hacer con su salida: `know` estrecha el muestreo y exige una cita, y en
+`document`, `deliver` y `notify` un valor de nivel inferior no puede presentarse
+como hecho. Una alucinación ya no puede ascender a hecho en silencio.
+
+### ¿Cuáles son los niveles?
+
+`doubt < speculate < believe < know`, un retículo — ver [El retículo](#el-retículo).
+
+### ¿Qué hace `know`, en concreto?
+
+Se traduce en una restricción: una temperatura y una ventana de muestreo nucleus
+más bajas, más anclas inyectadas automáticamente —`RequiresCitation` y
+`NoHallucination`— que la generación debe cumplir.
+
+### ¿Cómo paso a propósito un valor de menor confianza?
+
+De dos formas explícitas y auditables: adjuntando su procedencia, para que cada
+campo llegue con su nivel, su confianza y su fuente; o avalándolo dentro de un
+ámbito `epistemic { know }`, que convierte la afirmación en tuya. No hay camino
+silencioso.
+
+### ¿Esto también se aplica a la entrada?
+
+Sí. El contenido externo nace `Untrusted` y tiene que pasar por un `shield`
+antes de llegar a un destino de confianza — ver
+[Los datos nacen sin confianza](#los-datos-nacen-sin-confianza).

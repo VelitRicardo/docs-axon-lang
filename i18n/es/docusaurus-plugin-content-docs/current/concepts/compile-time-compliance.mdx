@@ -3,6 +3,12 @@ title: "Cumplimiento en compilación"
 description: "La clase regulatoria es un tipo. La cobertura es una diferencia de conjuntos. El vocabulario es cerrado. Esto es exactamente lo que eso demuestra — y lo que no."
 ---
 
+El **cumplimiento en compilación** significa que las reglas sobre adónde
+pueden ir los datos regulados las verifica el compilador, no un procedimiento.
+Una clase regulatoria —`HIPAA`, `GDPR`, `PCI_DSS` y doce más— forma parte del
+tipo de un valor, y un programa que la lleva a través de una frontera sin un
+shield que la cubra se rechaza antes de ejecutarse.
+
 Casi todos los sistemas tratan el cumplimiento como un proceso: un documento de
 política, una revisión, una auditoría que ocurre después de que el código
 existe. AXON lo trata como una **propiedad del sistema de tipos**, comprobada
@@ -112,3 +118,39 @@ la evidencia que emite.
 La postura frente a FIPS 140-3 es *conforme algorítmicamente, no validada
 formalmente*. CAVP y CMVP son procesos de laboratorio, y ningún compilador puede
 cerrarlos.
+
+## Preguntas frecuentes
+
+### ¿AXON hace que mi sistema cumpla HIPAA o GDPR?
+
+No, y nada en el lenguaje lo afirma. Lo que AXON comprueba automáticamente es
+más estrecho y exacto: que cada clase regulatoria exista de verdad
+(`axon-T1214`) y que toda frontera portadora de una clase declare un shield que
+la cubra (`axon-T957`, `axon-T1215`). Las obligaciones operativas de cada norma
+son cosa del diseño de tus shields y tus flows — ver
+[Qué demuestra esto, con precisión](#qué-demuestra-esto-con-precisión).
+
+### ¿Qué pasa cuando una frontera no está cubierta?
+
+`axon check` sale con `1`, igual que ante un error de sintaxis, y el diagnóstico
+nombra las clases que le faltan al shield. No se construye nada aguas abajo.
+
+### ¿En qué se diferencia de los guardrails en tiempo de ejecución?
+
+Un guardrail en ejecución inspecciona el tráfico mientras el sistema corre, así
+que un camino sin guardia se descubre —si se descubre— en producción. La regla
+de cobertura se verifica antes de que el programa exista como artefacto
+desplegable, así que un camino sin guardia no se puede desplegar. Las dos cosas
+se complementan: el shield es precisamente lo que actúa en ejecución cuando se
+detecta una brecha. El trabajo del compilador es garantizar que esté ahí.
+
+### ¿La verificación ocurre solo al compilar?
+
+No. Se repite en el despliegue, contra el artefacto (`axon pcc verify`), y el
+bus tipado falla cerrado en el `publish` para una IR que nunca pasó por el
+verificador.
+
+### ¿Qué clases regulatorias existen?
+
+Quince, en un registro cerrado que distingue mayúsculas — listadas en
+[El vocabulario es cerrado](#el-vocabulario-es-cerrado).

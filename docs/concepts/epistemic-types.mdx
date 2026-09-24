@@ -3,6 +3,11 @@ title: "Epistemic types"
 description: "A model's output is not a string. It carries how much the system is entitled to believe it — and the compiler will not let a guess become a fact."
 ---
 
+**Epistemic types** attach to every model output how much the system is
+entitled to believe it — `doubt`, `speculate`, `believe` or `know` — and the
+compiler refuses to let a lower level be presented as fact where a person or a
+system of record will act on it.
+
 Every framework treats an LLM's output as a `string`. AXON treats it as a value
 on a **typed epistemic lattice**: the text, plus how much the system is entitled
 to believe it.
@@ -74,3 +79,33 @@ a trusted sink passes through at least one `shield`.
 That is why a flow which acquires adversarial ingress content and feeds it to a
 cognitive step with no shield in scope is refused at compile time, rather than
 producing a plausible answer derived from a poisoned input.
+
+## Frequently asked questions
+
+### Do epistemic types eliminate hallucinations?
+
+No. A model can still be wrong. What changes is what the *system* may do with
+its output: `know` narrows sampling and requires a citation, and at `document`,
+`deliver` and `notify` a lower-level value cannot be presented as a fact. A
+hallucination can no longer be promoted to a fact silently.
+
+### What are the levels?
+
+`doubt < speculate < believe < know`, a lattice — see [The lattice](#the-lattice).
+
+### What does `know` do, concretely?
+
+It maps to a constraint: a lower temperature and nucleus-sampling window, plus
+auto-injected anchors — `RequiresCitation` and `NoHallucination` — that the
+generation must satisfy.
+
+### How do I pass a lower-confidence value on purpose?
+
+Two explicit, auditable ways: attach its provenance, so each field arrives with
+its level, confidence and source; or vouch for it inside an `epistemic { know }`
+scope, which makes the claim yours. There is no silent path.
+
+### Does this apply to input as well?
+
+Yes. External content is born `Untrusted` and must pass through a `shield`
+before it reaches a trusted sink — see [Data is born untrusted](#data-is-born-untrusted).
