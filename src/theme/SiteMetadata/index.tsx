@@ -41,9 +41,10 @@
  * DOS COSAS MÁS VIVEN AQUÍ, por la misma razón: necesitan el locale o la ruta,
  * y `themeConfig` no los conoce.
  *
- * - **OG por locale.** `themeConfig.image` es uno solo; en /es/ se sustituye
- *   por la versión en español. Una página con `image` en su frontmatter sigue
- *   ganando: su `<Head>` va más hondo en el árbol que este.
+ * - **OG por locale**, con sus dimensiones, tipo y `alt` justo detrás de
+ *   `og:image` (el protocolo las asocia a la última imagen declarada) y una
+ *   versión en la URL para romper la caché de las redes. Una página con
+ *   `image` en su frontmatter sigue ganando: su `<Head>` va más hondo.
  * - **JSON-LD en la portada de cada locale** (plan §15): WebSite +
  *   SoftwareApplication + Person. Es lo que ata AXON a su autor en el grafo de
  *   conocimiento y le da a los motores generativos una ficha que citar. No es
@@ -61,8 +62,24 @@ import {useLocation} from '@docusaurus/router';
 
 import {AUTHOR_NAME, AUTHOR_URL, AXON_VERSION} from '@site/src/config/links';
 
-/** Locales con OG propia. El resto hereda `themeConfig.image`. */
-const OG_BY_LOCALE: Record<string, string> = {es: 'img/og/axon-es.png'};
+/**
+ * Versión de las OG. Las redes cachean la imagen POR URL: si se regenera con
+ * scripts/build-brand-assets.py y la URL no cambia, WhatsApp, LinkedIn o
+ * Facebook siguen enseñando la vieja durante días. Se sube al regenerarlas.
+ */
+const OG_VERSION = '2';
+
+/** OG por locale; un locale sin entrada usa la inglesa. */
+const OG_BY_LOCALE: Record<string, string> = {
+  en: 'img/og/axon-en.png',
+  es: 'img/og/axon-es.png',
+};
+
+/** Texto alternativo de la OG: lo que dice la imagen, en el idioma de la página. */
+const OG_ALT: Record<string, string> = {
+  en: 'AXON — The language that compiles to LLMs. A program that sends regulated data across an unguarded boundary does not compile.',
+  es: 'AXON — El lenguaje que compila a LLMs. Un programa que envía datos regulados a través de una frontera sin guardia no compila.',
+};
 
 const DESCRIPTION: Record<string, string> = {
   en: 'A compiled language that targets LLMs instead of CPUs — where regulatory compliance is a type error, not a runbook.',
@@ -92,8 +109,10 @@ export default function SiteMetadataWrapper(props: Props): ReactNode {
     ? siteUrl + path.replace(/\/+$/, '')
     : null;
 
-  const ogPath = OG_BY_LOCALE[currentLocale];
-  const ogImage = useBaseUrl(ogPath ?? '', {absolute: true});
+  const ogImage = `${useBaseUrl(OG_BY_LOCALE[currentLocale] ?? OG_BY_LOCALE.en, {
+    absolute: true,
+  })}?v=${OG_VERSION}`;
+  const ogAlt = OG_ALT[currentLocale] ?? OG_ALT.en;
 
   const homeUrl = siteUrl + baseUrl.replace(/\/+$/, '');
   const isHome = pathname.replace(/\/+$/, '') === baseUrl.replace(/\/+$/, '');
@@ -138,12 +157,20 @@ export default function SiteMetadataWrapper(props: Props): ReactNode {
   return (
     <>
       <SiteMetadata {...props} />
-      {ogPath && (
-        <Head>
-          <meta property="og:image" content={ogImage} />
-          <meta name="twitter:image" content={ogImage} />
-        </Head>
-      )}
+      {/* og:image se vuelve a declarar aunque el tema ya lo haga (en EN, con
+          el mismo valor): react-helmet deduplica por `property` y conserva
+          esta, que es la que va seguida de sus dimensiones. Sin ellas,
+          Facebook, WhatsApp y LinkedIn no pintan la imagen la primera vez
+          que ven la URL. */}
+      <Head>
+        <meta property="og:image" content={ogImage} />
+        <meta property="og:image:type" content="image/png" />
+        <meta property="og:image:width" content="1200" />
+        <meta property="og:image:height" content="630" />
+        <meta property="og:image:alt" content={ogAlt} />
+        <meta name="twitter:image" content={ogImage} />
+        <meta name="twitter:image:alt" content={ogAlt} />
+      </Head>
       {jsonLd && (
         <Head>
           <script type="application/ld+json">{JSON.stringify(jsonLd)}</script>

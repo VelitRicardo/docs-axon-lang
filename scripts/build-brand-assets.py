@@ -6,26 +6,35 @@ Genera los favicons y las imágenes Open Graph desde una sola fuente.
 Fuente: `brand/axon-icon-source.webp` — el render 3D del isotipo (1080², fondo
 transparente). No se publica; lo que llega al build es lo que sale de aquí.
 
-POR QUÉ SE VECTORIZA Y NO SE REDUCE EL RENDER. A 16–48 px la textura y el
-sombreado del render se convierten en ruido marrón: lo que se lee es la silueta.
-Así que se traza la silueta (alfa > 50 %) y todo favicon sale de ese trazo en
-un color plano, el mediano de los píxeles opacos del render. El render entero
-solo se usa donde hay sitio para verlo: la imagen OG.
+SISTEMA VISUAL. Todo lo que sale de aquí sigue el *Brand book* de AXON (v1.0,
+septiembre 2026): hueso y tinta como únicos fondos, terracota como único
+acento, Newsreader para titulares y frases de remate, IBM Plex Mono para
+antetítulos en versalitas (la OG no lleva cuerpo de texto, así que Plex Sans
+no entra). Sin degradados, sin sombras, sin esquinas
+redondeadas; reglas de 1px y un solo filete de 3px. Ojo: la doc (tokens.css)
+todavía usa el sistema anterior —navy y neón—; estas imágenes ya no.
+
+POR QUÉ SE VECTORIZA EL ISOTIPO. A 16–48 px la textura y el sombreado del
+render se convierten en ruido: lo que se lee es la silueta. Y el brand book
+prohíbe degradados y sombras, que es justo lo que el render tiene. Así que se
+traza la silueta (alfa > 50 %) y todo —favicon y OG— sale de ese trazo, en
+terracota plano.
 
 Salida (todo en static/img/):
-    favicon.svg            trazo vectorial, color plano
+    favicon.svg            trazo vectorial, terracota
     favicon.ico            16 · 32 · 48
-    apple-touch-icon.png   180, sobre papel (iOS rellena de negro la transparencia)
-    icon-512.png           para el manifest y el logo del JSON-LD
+    apple-touch-icon.png   180, sobre hueso (iOS rellena de negro la transparencia)
+    icon-512.png           para el logo del JSON-LD
     og/axon-en.png         1200×630
     og/axon-es.png         1200×630
 
-Requiere: pillow, numpy, opencv-python, playwright (con chromium instalado).
+Requiere: pillow, numpy, opencv-python, playwright y Chrome instalado. Las
+fuentes de la OG se cargan de Google Fonts al renderizar: hace falta red.
 """
 
 from __future__ import annotations
 
-import base64
+import io
 from pathlib import Path
 
 import cv2
@@ -35,14 +44,15 @@ from PIL import Image
 ROOT = Path(__file__).resolve().parent.parent
 SRC = ROOT / 'brand' / 'axon-icon-source.webp'
 OUT = ROOT / 'static' / 'img'
-FONTS = ROOT / 'src' / 'fonts'
 
-# Papel y tinta del sistema (src/css/tokens.css). Se repiten aquí porque este
-# script no lee CSS; si cambian allí, cambian aquí.
-PAPER = '#fbf9f5'
-NAVY = '#17246b'
-INK_MUTED = '#4a4f57'
-NEON = '#00c458'
+# Brand book v1.0 — paleta exacta. Nada fuera de esta lista.
+HUESO = '#F4F4F1'  # fondo claro
+LINEA = '#D9D8D2'  # reglas de 1px sobre hueso
+GRIS_MEDIO = '#6B7075'  # metadatos, pie
+GRIS_PROFUNDO = '#3C4045'  # cuerpo largo sobre hueso
+TINTA = '#1F2225'  # titulares y fondo oscuro
+TERRACOTA = '#B4462F'  # acento único sobre hueso
+TERRACOTA_CLARO = '#E8A08E'  # el mismo acento sobre tinta
 
 # Margen del isotipo dentro del cuadrado del favicon, por lado.
 FAVICON_PAD = 0.04
@@ -51,12 +61,6 @@ TOUCH_PAD = 0.16
 
 def load_source() -> np.ndarray:
     return np.array(Image.open(SRC).convert('RGBA'))
-
-
-def mark_color(rgba: np.ndarray) -> str:
-    opaque = rgba[rgba[..., 3] > 250][:, :3]
-    r, g, b = (int(v) for v in np.median(opaque, axis=0))
-    return f'#{r:02x}{g:02x}{b:02x}'
 
 
 def trace(rgba: np.ndarray) -> tuple[list[np.ndarray], tuple[int, int, int, int]]:
@@ -76,17 +80,16 @@ def square_box(bbox, pad: float) -> tuple[float, float, float]:
     return x + w / 2 - side / 2, y + h / 2 - side / 2, side
 
 
-def write_svg(contours, bbox, color: str) -> None:
-    ox, oy, side = square_box(bbox, FAVICON_PAD)
+def mark_svg(contours, bbox, color: str, pad: float) -> str:
+    ox, oy, side = square_box(bbox, pad)
     d = ''.join(
         'M' + ' '.join(f'{px - ox:.1f} {py - oy:.1f}' for px, py in c) + 'Z'
         for c in contours
     )
-    svg = (
+    return (
         f'<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 {side:.1f} {side:.1f}">'
-        f'<title>AXON</title><path fill="{color}" d="{d}"/></svg>\n'
+        f'<title>AXON</title><path fill="{color}" d="{d}"/></svg>'
     )
-    (OUT / 'favicon.svg').write_text(svg, encoding='utf-8')
 
 
 def raster(contours, bbox, color: str, size: int, pad: float, bg: str | None) -> Image.Image:
@@ -108,104 +111,100 @@ def raster(contours, bbox, color: str, size: int, pad: float, bg: str | None) ->
     return base.convert('RGB')
 
 
-def font_face(family: str, file: str, style: str = 'normal') -> str:
-    data = base64.b64encode((FONTS / file).read_bytes()).decode()
-    return (
-        f"@font-face{{font-family:'{family}';font-style:{style};"
-        f"src:url(data:font/woff2;base64,{data}) format('woff2');}}"
-    )
-
-
 OG_COPY = {
     'en': {
         'eyebrow': 'axon-lang · documentation',
-        'title': 'The language that<br>compiles to <em>LLMs</em>',
+        'title': 'The language that compiles to LLMs',
         'claim': 'A program that sends regulated data across an unguarded boundary does not compile.',
     },
     'es': {
         'eyebrow': 'axon-lang · documentación',
-        'title': 'El lenguaje que<br>compila a <em>LLMs</em>',
+        'title': 'El lenguaje que compila a LLMs',
         'claim': 'Un programa que envía datos regulados a través de una frontera sin guardia no compila.',
     },
 }
 
+FONTS_URL = (
+    'https://fonts.googleapis.com/css2?'
+    'family=Newsreader:ital,opsz,wght@0,6..72,400;1,6..72,400'
+    '&family=IBM+Plex+Mono:wght@500&display=block'
+)
 
-def og_html(lang: str, mark_png: str) -> str:
+
+def og_html(lang: str, mark: str) -> str:
+    """
+    Dos bloques, los dos fondos del sistema: hueso con el texto, tinta con el
+    isotipo en terracota claro (el acento sobre tinta). Escala del brand book
+    llevada de 1920 a 1200 (×0.625): titular de portada 104 → 65 px, frase de
+    remate 34–42 → 25 px, antetítulo 22–26 → 15 px.
+    """
     c = OG_COPY[lang]
-    fonts = (
-        font_face('Instrument Serif', 'instrument-serif-normal-latin.woff2')
-        + font_face('Instrument Serif', 'instrument-serif-italic-latin.woff2', 'italic')
-        + font_face('Inter Tight', 'inter-tight-normal-latin.woff2')
-        + font_face('JetBrains Mono', 'jetbrains-mono-normal-latin.woff2')
-    )
-    return f"""<!doctype html><html lang="{lang}"><head><meta charset="utf-8"><style>
-{fonts}
+    return f"""<!doctype html><html lang="{lang}"><head><meta charset="utf-8">
+<link rel="stylesheet" href="{FONTS_URL}"><style>
 *{{margin:0;box-sizing:border-box}}
-body{{width:1200px;height:630px;background:{PAPER};position:relative;overflow:hidden;
-  font-family:'Inter Tight',sans-serif;color:{NAVY}}}
-.mark{{position:absolute;right:56px;top:50%;transform:translateY(-50%);width:430px}}
-.copy{{position:absolute;left:80px;top:78px;width:640px}}
-.eyebrow{{font-family:'JetBrains Mono',monospace;font-size:22px;letter-spacing:.02em;color:{INK_MUTED}}}
-.wordmark{{font-family:'Instrument Serif',serif;font-size:44px;margin-top:34px}}
-h1{{font-family:'Instrument Serif',serif;font-weight:400;font-size:84px;line-height:1.02;margin-top:6px}}
-h1 em{{font-style:italic}}
-.rule{{width:132px;height:6px;background:{NEON};margin:34px 0 26px}}
-.claim{{font-size:25px;line-height:1.4;color:{INK_MUTED};width:600px}}
-.url{{position:absolute;left:80px;bottom:52px;font-family:'JetBrains Mono',monospace;font-size:20px;color:{INK_MUTED}}}
+body{{width:1200px;height:630px;display:flex;background:{HUESO};overflow:hidden}}
+.copy{{flex:1;padding:60px 64px 48px 72px;display:flex;flex-direction:column}}
+.eyebrow{{font:500 15px/1 'IBM Plex Mono',monospace;letter-spacing:.2em;text-transform:uppercase;color:{TERRACOTA}}}
+.wordmark{{font:400 30px/1 'Newsreader',serif;color:{TINTA};margin-top:44px}}
+h1{{font:400 65px/1.04 'Newsreader',serif;letter-spacing:-.02em;color:{TINTA};margin-top:14px}}
+.claim{{margin-top:34px;padding-left:20px;border-left:3px solid {TERRACOTA};
+  font:italic 400 25px/1.35 'Newsreader',serif;color:{GRIS_PROFUNDO}}}
+.foot{{margin-top:auto;padding-top:18px;border-top:1px solid {LINEA};
+  font:500 15px/1 'IBM Plex Mono',monospace;letter-spacing:.12em;color:{GRIS_MEDIO}}}
+.panel{{width:420px;background:{TINTA};display:flex;align-items:center;justify-content:center}}
+.panel svg{{width:330px;height:330px}}
 </style></head><body>
-<img class="mark" src="data:image/png;base64,{mark_png}">
 <div class="copy">
   <div class="eyebrow">{c['eyebrow']}</div>
   <div class="wordmark">AXON</div>
   <h1>{c['title']}</h1>
-  <div class="rule"></div>
   <p class="claim">{c['claim']}</p>
+  <div class="foot">ricardovelit.com/axon-docs</div>
 </div>
-<div class="url">ricardovelit.com/axon-docs</div>
+<div class="panel">{mark}</div>
 </body></html>"""
 
 
-def write_og(rgba: np.ndarray, bbox) -> None:
+def write_og(contours, bbox) -> None:
     from playwright.sync_api import sync_playwright
 
-    x, y, w, h = bbox
-    crop = Image.fromarray(rgba).crop((x, y, x + w, y + h))
-    buf = __import__('io').BytesIO()
-    crop.save(buf, 'PNG')
-    mark_png = base64.b64encode(buf.getvalue()).decode()
-
+    mark = mark_svg(contours, bbox, TERRACOTA_CLARO, 0)
     (OUT / 'og').mkdir(exist_ok=True)
     with sync_playwright() as p:
         # El Chrome del sistema: evita descargar el de Playwright solo para esto.
         browser = p.chromium.launch(channel='chrome')
         page = browser.new_page(viewport={'width': 1200, 'height': 630})
         for lang in OG_COPY:
-            page.set_content(og_html(lang, mark_png))
+            page.set_content(og_html(lang, mark), wait_until='networkidle')
             page.evaluate('document.fonts.ready')
-            tmp = OUT / 'og' / f'axon-{lang}.tmp.png'
-            page.screenshot(path=str(tmp))
+            loaded = page.evaluate(
+                "['Newsreader','IBM Plex Mono']"
+                ".every(f => document.fonts.check(`16px '${f}'`))"
+            )
+            if not loaded:
+                raise SystemExit('Las fuentes del brand book no cargaron (¿sin red?).')
+            png = page.screenshot()
             # Sin alfa y optimizado: los scrapers de redes pesan cada KB.
-            Image.open(tmp).convert('RGB').save(
+            Image.open(io.BytesIO(png)).convert('RGB').save(
                 OUT / 'og' / f'axon-{lang}.png', optimize=True
             )
-            tmp.unlink()
         browser.close()
 
 
 def main() -> None:
     rgba = load_source()
-    color = mark_color(rgba)
     contours, bbox = trace(rgba)
 
-    write_svg(contours, bbox, color)
-    icons = [raster(contours, bbox, color, s, FAVICON_PAD, None) for s in (48, 32, 16)]
+    (OUT / 'favicon.svg').write_text(
+        mark_svg(contours, bbox, TERRACOTA, FAVICON_PAD) + '\n', encoding='utf-8'
+    )
+    icons = [raster(contours, bbox, TERRACOTA, s, FAVICON_PAD, None) for s in (48, 32, 16)]
     icons[0].save(OUT / 'favicon.ico', sizes=[(48, 48), (32, 32), (16, 16)], append_images=icons[1:])
-    raster(contours, bbox, color, 180, TOUCH_PAD, PAPER).save(OUT / 'apple-touch-icon.png', optimize=True)
-    raster(contours, bbox, color, 512, FAVICON_PAD, None).save(OUT / 'icon-512.png', optimize=True)
-    write_og(rgba, bbox)
+    raster(contours, bbox, TERRACOTA, 180, TOUCH_PAD, HUESO).save(OUT / 'apple-touch-icon.png', optimize=True)
+    raster(contours, bbox, TERRACOTA, 512, FAVICON_PAD, None).save(OUT / 'icon-512.png', optimize=True)
+    write_og(contours, bbox)
 
-    print(f'color {color} · {len(contours)} contornos · '
-          f'{sum(len(c) for c in contours)} vértices')
+    print(f'{len(contours)} contornos · {sum(len(c) for c in contours)} vértices')
 
 
 if __name__ == '__main__':

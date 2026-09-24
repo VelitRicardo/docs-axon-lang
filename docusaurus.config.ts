@@ -151,6 +151,11 @@ const config: Config = {
           'axon-lang, cognitive runtime, cognitive OS, LLM compiler, AI agent language, agent DSL, Rust AI runtime',
       },
       {name: 'author', content: AUTHOR_NAME},
+      // Las etiquetas de la imagen (dimensiones, tipo, alt) las pone
+      // src/theme/SiteMetadata, justo detrás de og:image: el protocolo OG las
+      // asocia a la última og:image declarada, así que el orden importa.
+      {property: 'og:type', content: 'website'},
+      {property: 'og:site_name', content: 'AXON'},
     ],
     navbar: {
       title: 'AXON',
